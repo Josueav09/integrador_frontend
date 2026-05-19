@@ -1,0 +1,12 @@
+@import './styles/auth.css';
+@import './styles/dashboard.css';
+
+.auth-success__btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+#root {
+  min-height: 100vh;
+}
