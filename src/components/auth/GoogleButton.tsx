@@ -1,6 +1,10 @@
-export function GoogleButton() {
+type GoogleButtonProps = {
+  onClick?: () => void
+}
+
+export function GoogleButton({ onClick }: GoogleButtonProps) {
   return (
-    <button type="button" className="auth-google">
+    <button type="button" className="auth-google" onClick={onClick}>
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
         <path
           fill="#4285F4"

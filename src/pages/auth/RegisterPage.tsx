@@ -17,14 +17,20 @@ export function RegisterPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!isValid) return
-    navigate('/register/success')
+    navigate('/register/success', { state: { email, name } })
+  }
+
+  const handleGoogleRegister = () => {
+    navigate('/register/success', {
+      state: { email: 'usuario@gmail.com', name: 'Usuario Google' },
+    })
   }
 
   return (
     <AuthLayout variant="register">
       <form className="auth-form" onSubmit={handleSubmit}>
         <h1>Regístrate</h1>
-        <GoogleButton />
+        <GoogleButton onClick={handleGoogleRegister} />
         <p className="auth-divider">o regístrate con tu email</p>
         <TextField
           id="register-name"

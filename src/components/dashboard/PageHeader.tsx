@@ -1,3 +1,4 @@
+import { useAuth } from '../../contexts/AuthContext'
 import { useUserModal } from '../../contexts/UserModalContext'
 
 type PageHeaderProps = {
@@ -9,6 +10,7 @@ type PageHeaderProps = {
 
 export function PageHeader({ title, subtitle, children, showUserBtn = true }: PageHeaderProps) {
   const { open } = useUserModal()
+  const { user } = useAuth()
 
   return (
     <header className="dash-header">
@@ -17,6 +19,7 @@ export function PageHeader({ title, subtitle, children, showUserBtn = true }: Pa
         {subtitle && <p>{subtitle}</p>}
       </div>
       <div className="dash-header__actions">
+        {user && <span className="dash-header__user">{user.email}</span>}
         {children}
         {showUserBtn && (
           <button type="button" className="dash-btn dash-btn--primary" onClick={open}>

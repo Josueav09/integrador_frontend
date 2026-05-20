@@ -4,10 +4,17 @@ type SuccessScreenProps = {
   title: string
   message: string
   buttonText: string
-  buttonTo: string
+  buttonTo?: string
+  onButtonClick?: () => void
 }
 
-export function SuccessScreen({ title, message, buttonText, buttonTo }: SuccessScreenProps) {
+export function SuccessScreen({
+  title,
+  message,
+  buttonText,
+  buttonTo,
+  onButtonClick,
+}: SuccessScreenProps) {
   return (
     <div className="auth-form auth-success">
       <div className="auth-success__icon" aria-hidden="true">
@@ -17,9 +24,15 @@ export function SuccessScreen({ title, message, buttonText, buttonTo }: SuccessS
       </div>
       <h1>{title}</h1>
       <p>{message}</p>
-      <Link to={buttonTo} className="auth-btn auth-btn--primary auth-success__btn">
-        {buttonText}
-      </Link>
+      {onButtonClick ? (
+        <button type="button" className="auth-btn auth-btn--primary auth-success__btn" onClick={onButtonClick}>
+          {buttonText}
+        </button>
+      ) : (
+        <Link to={buttonTo ?? '/login'} className="auth-btn auth-btn--primary auth-success__btn">
+          {buttonText}
+        </Link>
+      )}
     </div>
   )
 }

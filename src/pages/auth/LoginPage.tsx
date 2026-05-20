@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import { AuthLayout } from '../../components/auth/AuthLayout'
 import { GoogleButton } from '../../components/auth/GoogleButton'
 import { TextField } from '../../components/auth/TextField'
@@ -7,6 +8,7 @@ import { PrimaryButton } from '../../components/auth/PrimaryButton'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -15,6 +17,12 @@ export function LoginPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!isValid) return
+    login(email)
+    navigate('/dashboard')
+  }
+
+  const handleGoogleLogin = () => {
+    login('usuario@gmail.com', 'Usuario Google')
     navigate('/dashboard')
   }
 
@@ -22,7 +30,7 @@ export function LoginPage() {
     <AuthLayout variant="login">
       <form className="auth-form" onSubmit={handleSubmit}>
         <h1>¡Bienvenido de nuevo!</h1>
-        <GoogleButton />
+        <GoogleButton onClick={handleGoogleLogin} />
         <p className="auth-divider">o ingresa con tu email</p>
         <TextField
           id="login-email"

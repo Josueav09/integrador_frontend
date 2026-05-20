@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import { NAV_ITEMS } from '../../data/mockData'
 
 const ICONS: Record<string, string> = {
@@ -14,6 +15,7 @@ const ICONS: Record<string, string> = {
 
 export function Sidebar() {
   const navigate = useNavigate()
+  const { logout, user } = useAuth()
 
   return (
     <aside className="dash-sidebar">
@@ -38,8 +40,20 @@ export function Sidebar() {
         ))}
       </nav>
       <div className="dash-sidebar__footer">
+        {user && (
+          <p className="dash-sidebar__user" title={user.email}>
+            {user.name}
+          </p>
+        )}
         <p className="dash-sidebar__version">Sistema de Pronóstico Espaciotemporal v1.0</p>
-        <button type="button" className="dash-logout" onClick={() => navigate('/login')}>
+        <button
+          type="button"
+          className="dash-logout"
+          onClick={() => {
+            logout()
+            navigate('/login')
+          }}
+        >
           ↪ Cerrar Sesión
         </button>
       </div>
