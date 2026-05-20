@@ -19,7 +19,7 @@ export function PageHeader({ title, subtitle, children, showUserBtn = true }: Pa
         {subtitle && <p>{subtitle}</p>}
       </div>
       <div className="dash-header__actions">
-        {user && <span className="dash-header__user">{user.email}</span>}
+        {user && <span className="dash-header__user-pill" title={user.email}>{user.name}</span>}
         {children}
         {showUserBtn && (
           <button type="button" className="dash-btn dash-btn--primary" onClick={open}>

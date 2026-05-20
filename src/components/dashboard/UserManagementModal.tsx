@@ -108,7 +108,15 @@ export function UserManagementModal() {
                     </span>
                   </td>
                   <td>{u.date}</td>
-                  <td style={{ fontSize: '1rem' }}>✎ 🗑{u.status === 'Inactivo' ? ' ✓' : ''}</td>
+                  <td>
+                    <div className="dash-user-actions">
+                      <button type="button" title="Editar">✎</button>
+                      <button type="button" title="Eliminar">🗑</button>
+                      {u.status === 'Inactivo' && (
+                        <button type="button" title="Activar">✓</button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
