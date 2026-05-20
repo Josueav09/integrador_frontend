@@ -11,19 +11,29 @@ export function LoginPage() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const isValid = email.trim().length > 0 && password.trim().length > 0
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!isValid) return
-    login(email)
-    navigate('/dashboard')
+    
+    setError(null)
+    setLoading(true)
+    try {
+      await login(email, password)
+      navigate('/dashboard')
+    } catch (err: any) {
+      setError(err.message || 'Credenciales incorrectas')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogleLogin = () => {
-    login('usuario@gmail.com', 'Usuario Google')
-    navigate('/dashboard')
+    alert("El inicio de sesión con Google está deshabilitado temporalmente.")
   }
 
   return (
@@ -32,6 +42,9 @@ export function LoginPage() {
         <h1>¡Bienvenido de nuevo!</h1>
         <GoogleButton onClick={handleGoogleLogin} />
         <p className="auth-divider">o ingresa con tu email</p>
+        
+        {error && <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.875rem', textAlign: 'center', background: '#fee2e2', padding: '0.5rem', borderRadius: '4px' }}>{error}</div>}
+
         <TextField
           id="login-email"
           label="Correo electrónico"
@@ -52,7 +65,9 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
         />
-        <PrimaryButton disabled={!isValid}>Iniciar sesión</PrimaryButton>
+        <PrimaryButton disabled={!isValid || loading}>
+          {loading ? 'Iniciando...' : 'Iniciar sesión'}
+        </PrimaryButton>
         <p className="auth-footer">
           ¿No tienes una cuenta? <Link to="/register">Regístrate</Link>
         </p>
@@ -60,3 +75,4 @@ export function LoginPage() {
     </AuthLayout>
   )
 }
+
