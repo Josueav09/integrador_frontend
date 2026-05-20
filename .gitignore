@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Docker Configs & Data
+.docker/
+docker-compose.override.yml
+# Sustituye 'docker_data/' por el nombre de la carpeta que uses para tus volúmenes locales
+/docker_data/
+/data/
+# Logs generados dentro de los contenedores
+.containers_logs/
