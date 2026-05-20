@@ -20,15 +20,7 @@ export function CrimeMapPage() {
         subtitle="Visualización espacial de actividad delictiva"
       />
       <div className="dash-content">
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.75rem',
-            flexWrap: 'wrap',
-            marginBottom: '1rem',
-            alignItems: 'center',
-          }}
-        >
+        <div className="dash-toolbar">
           <div className="dash-toggle">
             <button
               type="button"
@@ -51,31 +43,36 @@ export function CrimeMapPage() {
           <select className="dash-select" defaultValue="zones">
             <option>Todas las zonas</option>
           </select>
-          <input className="dash-select" readOnly value="17/04/2024 - 24/04/2024" />
-          <button type="button" className="dash-btn dash-btn--outline" onClick={() => setFiltersOpen(true)}>
+          <input className="dash-select dash-select--date" readOnly value="17/04/2024 - 24/04/2024" />
+          <button type="button" className="dash-btn dash-btn--primary" onClick={() => setFiltersOpen(true)}>
             Filtros Avanzados
           </button>
         </div>
 
         <div className="dash-map-wrap">
           <div className="dash-map">
+            <div className="dash-map__hex" aria-hidden />
+            <div className="dash-map__glow dash-map__glow--1" aria-hidden />
+            <div className="dash-map__glow dash-map__glow--2" aria-hidden />
+            <div className="dash-map__glow dash-map__glow--3" aria-hidden />
             <div className="dash-map__overlay">
-              Lima Metropolitana — 12 distritos monitoreados
+              <strong>Lima Metropolitana</strong>
               <br />
-              Modo: {mode === 'historico' ? 'Histórico' : 'Predicción'}
+              12 distritos monitoreados · Modo {mode === 'historico' ? 'Histórico' : 'Predicción'}
             </div>
             {MAP_DISTRICTS.map((d) => (
               <div
                 key={d.name}
                 className={`dash-map__district dash-map__district--${riskClass(d.risk)}`}
                 style={{ left: `${d.x}%`, top: `${d.y}%` }}
+                title={`${d.name}: ${d.risk}% riesgo`}
               >
                 {d.name} {d.risk}%
               </div>
             ))}
           </div>
           <div>
-            <div className="dash-card" style={{ marginBottom: '1rem' }}>
+            <div className="dash-card dash-card--compact">
               <h3>Leyenda de Intensidad</h3>
               <div className="dash-legend-item">
                 <span className="dash-legend-dot" style={{ background: '#ef4444' }} />
@@ -114,6 +111,13 @@ export function CrimeMapPage() {
         </div>
       </div>
 
+      <button
+        type="button"
+        className={`dash-filters-backdrop ${filtersOpen ? 'open' : ''}`}
+        aria-label="Cerrar filtros"
+        onClick={() => setFiltersOpen(false)}
+      />
+
       <div className={`dash-filters-panel ${filtersOpen ? 'open' : ''}`}>
         <div className="dash-filters-panel__head">
           <h3>Filtros Dinámicos</h3>
@@ -121,7 +125,7 @@ export function CrimeMapPage() {
             ×
           </button>
         </div>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.5rem' }}>Tipo de Delito</p>
+        <p className="dash-filter-label">Tipo de Delito</p>
         <div className="dash-filter-chips">
           {CRIME_TYPES_FILTER.map((t) => (
             <button
@@ -134,26 +138,34 @@ export function CrimeMapPage() {
             </button>
           ))}
         </div>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, margin: '1rem 0 0.5rem' }}>Rango de Fechas</p>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <input className="dash-select" placeholder="Desde" style={{ flex: 1 }} />
-          <input className="dash-select" placeholder="Hasta" style={{ flex: 1 }} />
+        <p className="dash-filter-label">Rango de Fechas</p>
+        <div className="dash-filter-row">
+          <input className="dash-select" placeholder="Desde" />
+          <input className="dash-select" placeholder="Hasta" />
         </div>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, margin: '1rem 0 0.5rem' }}>Horario</p>
-        <input type="range" min={0} max={24} defaultValue={12} style={{ width: '100%' }} />
-        <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>0:00 — 24:00</p>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, margin: '1rem 0 0.5rem' }}>Zona / Distrito</p>
-        <input className="dash-select" placeholder="Buscar distrito..." style={{ width: '100%' }} />
-        <div className="dash-card" style={{ marginTop: '1rem', background: '#f9fafb' }}>
+        <p className="dash-filter-label">Horario</p>
+        <input type="range" min={0} max={24} defaultValue={12} className="dash-range" />
+        <p className="dash-filter-hint">0:00 — 24:00</p>
+        <p className="dash-filter-label">Zona / Distrito</p>
+        <input className="dash-select dash-select--full" placeholder="Buscar distrito..." />
+        <div className="dash-card dash-preview-box">
           <strong>Vista Previa</strong>
-          <p style={{ fontSize: '0.8125rem', margin: '0.5rem 0 0' }}>
-            496 registros coinciden con los filtros seleccionados
-          </p>
+          <p>496 registros coinciden con los filtros seleccionados</p>
         </div>
-        <button type="button" className="dash-btn dash-btn--purple" style={{ width: '100%', marginTop: '1rem' }}>
+        <button
+          type="button"
+          className="dash-btn dash-btn--purple dash-btn--block"
+          onClick={() => setFiltersOpen(false)}
+        >
           Aplicar Filtros
         </button>
-        <button type="button" className="dash-btn dash-btn--ghost" style={{ width: '100%', marginTop: '0.5rem' }}>
+        <button
+          type="button"
+          className="dash-btn dash-btn--ghost dash-btn--block"
+          onClick={() => {
+            setSelectedType('Todos los delitos')
+          }}
+        >
           Limpiar Filtros
         </button>
       </div>

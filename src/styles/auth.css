@@ -78,17 +78,20 @@ body {
     radial-gradient(ellipse 60% 40% at 45% 55%, rgba(80, 30, 120, 0.5), transparent 50%);
 }
 
-.auth-brand__title {
+.auth-brand__content {
   position: relative;
   z-index: 1;
-  margin: 0;
   padding: 0 2rem;
+  text-align: center;
+}
+
+.auth-brand__title {
+  margin: 0;
   font-size: clamp(2rem, 4vw, 3.25rem);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: #fff;
-  text-align: center;
 }
 
 .auth-panel {

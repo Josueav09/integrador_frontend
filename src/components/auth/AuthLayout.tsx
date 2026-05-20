@@ -12,7 +12,10 @@ export function AuthLayout({ variant = 'login', children }: AuthLayoutProps) {
     <div className="auth-shell">
       <aside className={`auth-brand auth-brand--${variant}`}>
         <div className="auth-brand__waves" aria-hidden="true" />
-        <h1 className="auth-brand__title">GNN Crime AI</h1>
+        <div className="auth-brand__content">
+          <h1 className="auth-brand__title">GNN Crime AI</h1>
+          <p className="auth-brand__subtitle">Sistema Predictivo</p>
+        </div>
       </aside>
       <main className="auth-panel">{children}</main>
     </div>

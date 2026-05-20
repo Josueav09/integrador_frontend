@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { KpiCard } from '../../components/dashboard/KpiCard'
 import { PageHeader } from '../../components/dashboard/PageHeader'
 import {
   CRIMES_BY_TYPE,
@@ -17,36 +18,27 @@ import {
   RECENT_ALERTS,
   WEEKLY_TREND,
 } from '../../data/mockData'
-
-const KPI_ICONS: Record<string, string> = {
-  pulse: '📊',
-  pin: '📍',
-  warning: '⚠',
-  trend: '📈',
-}
+import { chartAxisTick, chartGridStroke, chartTooltipStyle } from '../../utils/chartTheme'
 
 export function DashboardPage() {
   return (
     <>
-      <PageHeader title="Dashboard Analítico" subtitle="Vista general del sistema predictivo" />
+      <PageHeader
+        title="Dashboard Analítico"
+        subtitle="Monitoreo en tiempo real del sistema de pronóstico"
+      />
       <div className="dash-content">
         <div className="dash-kpi-grid">
           {DASHBOARD_KPIS.map((kpi) => (
-            <div key={kpi.label} className="dash-kpi">
-              <div className="dash-kpi__top">
-                <div>
-                  <p className="dash-kpi__label">{kpi.label}</p>
-                  <p className="dash-kpi__value">{kpi.value}</p>
-                  {'change' in kpi && kpi.change && (
-                    <p className="dash-kpi__change">{kpi.change}</p>
-                  )}
-                  {'sub' in kpi && kpi.sub && <p className="dash-kpi__sub">{kpi.sub}</p>}
-                </div>
-                <div className={`dash-kpi__icon dash-kpi__icon--${kpi.tone}`}>
-                  {KPI_ICONS[kpi.icon]}
-                </div>
-              </div>
-            </div>
+            <KpiCard
+              key={kpi.label}
+              label={kpi.label}
+              value={kpi.value}
+              change={'change' in kpi ? kpi.change : undefined}
+              sub={'sub' in kpi ? kpi.sub : undefined}
+              tone={kpi.tone as 'blue' | 'orange' | 'red' | 'purple'}
+              icon={kpi.icon}
+            />
           ))}
         </div>
 
@@ -54,11 +46,11 @@ export function DashboardPage() {
           <div className="dash-card">
             <h3>Delitos por Tipo</h3>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={CRIMES_BY_TYPE}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
+              <BarChart data={CRIMES_BY_TYPE} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="name" tick={chartAxisTick} axisLine={false} tickLine={false} />
+                <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
+                <Tooltip {...chartTooltipStyle} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {CRIMES_BY_TYPE.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
@@ -70,12 +62,19 @@ export function DashboardPage() {
           <div className="dash-card">
             <h3>Tendencia Semanal</h3>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={WEEKLY_TREND}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
+              <LineChart data={WEEKLY_TREND} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="day" tick={chartAxisTick} axisLine={false} tickLine={false} />
+                <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
+                <Tooltip {...chartTooltipStyle} />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#8b5cf6"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }}
+                  activeDot={{ r: 6 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -88,7 +87,7 @@ export function DashboardPage() {
               <div key={a.zone} className="dash-alert">
                 <div>
                   <strong>{a.zone}</strong>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#6b7280' }}>{a.time}</p>
+                  <p className="dash-alert__time">{a.time}</p>
                 </div>
                 <span className={`dash-badge dash-badge--${a.level.toLowerCase()}`}>{a.level}</span>
               </div>
