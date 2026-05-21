@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { path: '/dashboard/metricas', label: 'Métricas Modelo', icon: 'metrics' },
   { path: '/dashboard/monitor', label: 'Monitor IA', icon: 'monitor' },
   { path: '/dashboard/administracion', label: 'Administración', icon: 'admin' },
+  { path: '/dashboard/denuncias', label: 'Bandeja Denuncias', icon: 'predict' },
 ] as const
 
 export const DASHBOARD_KPIS = [

@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
-import { CRIME_TYPES_FILTER, ZONE_STATS } from '../../data/mockData'
+import { ZONE_STATS } from '../../data/mockData'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { apiClient } from '../../api/client'
+
+const TIPOS_DELITO = [
+  { id: 'TODOS', label: 'Todos los delitos' },
+  { id: 'ROB-001', label: 'Robo Agravado' },
+  { id: 'HUR-001', label: 'Hurto Simple' }
+]
 
 // Coordenadas reales aproximadas de Lima
 const REAL_DISTRICTS = [
@@ -29,7 +35,10 @@ function getMarkerColor(risk: number) {
 export function CrimeMapPage() {
   const [mode, setMode] = useState<'historico' | 'prediccion'>('historico')
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [selectedType, setSelectedType] = useState('Todos los delitos')
+  
+  // States para Filtros Reales
+  const [selectedType, setSelectedType] = useState('TODOS')
+  const [distritoInput, setDistritoInput] = useState('Lima')
   
   // Estado para la predicción real
   const [hotspots, setHotspots] = useState<any[]>([])
@@ -39,10 +48,11 @@ export function CrimeMapPage() {
   const fetchPredictions = async () => {
     setLoading(true)
     try {
-      // Llamada real al backend enviando la fecha y distrito (simulado a nivel global por ahora)
+      // Llamada real al backend enviando la fecha, distrito y TIPO DE DELITO (Filtro Heurístico)
       const res = await apiClient.post('/predict/predecir', {
         fecha_consulta: '2026-05-20',
-        distrito: 'Lima'
+        distrito: distritoInput || 'Lima',
+        tipo_delito: selectedType
       })
       if (res.data && res.data.hotspots) {
         setHotspots(res.data.hotspots)
@@ -215,16 +225,16 @@ export function CrimeMapPage() {
             ×
           </button>
         </div>
-        <p className="dash-filter-label">Tipo de Delito</p>
+        <p className="dash-filter-label">Tipo de Delito (Motor GNN)</p>
         <div className="dash-filter-chips">
-          {CRIME_TYPES_FILTER.map((t) => (
+          {TIPOS_DELITO.map((t) => (
             <button
-              key={t}
+              key={t.id}
               type="button"
-              className={`dash-filter-chip ${selectedType === t ? 'selected' : ''}`}
-              onClick={() => setSelectedType(t)}
+              className={`dash-filter-chip ${selectedType === t.id ? 'selected' : ''}`}
+              onClick={() => setSelectedType(t.id)}
             >
-              {t}
+              {t.label}
             </button>
           ))}
         </div>
@@ -237,17 +247,29 @@ export function CrimeMapPage() {
         <input type="range" min={0} max={24} defaultValue={12} className="dash-range" />
         <p className="dash-filter-hint">0:00 — 24:00</p>
         <p className="dash-filter-label">Zona / Distrito</p>
-        <input className="dash-select dash-select--full" placeholder="Buscar distrito..." />
+        <input 
+          className="dash-select dash-select--full" 
+          placeholder="Ej: Lima, Comas..." 
+          value={distritoInput}
+          onChange={(e) => setDistritoInput(e.target.value)}
+        />
         <div className="dash-card dash-preview-box">
-          <strong>Vista Previa</strong>
-          <p>496 registros coinciden con los filtros seleccionados</p>
+          <strong>Vista Previa GNN</strong>
+          <p>Al aplicar, el motor recalculará la Independencia Condicional para {TIPOS_DELITO.find(t => t.id === selectedType)?.label}.</p>
         </div>
         <button
           type="button"
           className="dash-btn dash-btn--purple dash-btn--block"
-          onClick={() => setFiltersOpen(false)}
+          onClick={() => {
+            setFiltersOpen(false);
+            if (mode === 'prediccion') {
+              fetchPredictions();
+            } else {
+              setMode('prediccion'); // Si estaba en histórico, lo cambiamos a predicción para que el Effect haga fetch
+            }
+          }}
         >
-          Aplicar Filtros
+          Aplicar Filtros GNN
         </button>
       </div>
     </>

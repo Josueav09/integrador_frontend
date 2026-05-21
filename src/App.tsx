@@ -54,6 +54,12 @@ const MonitorPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('./pages/dashboard/AdminPage').then((m) => ({ default: m.AdminPage })),
 )
+const ReportCrimePage = lazy(() =>
+  import('./pages/dashboard/ReportCrimePage').then((m) => ({ default: m.ReportCrimePage })),
+)
+const InboxPage = lazy(() =>
+  import('./pages/dashboard/InboxPage').then((m) => ({ default: m.InboxPage })),
+)
 
 function App() {
   return (
@@ -62,6 +68,9 @@ function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
+            
+            {/* Ruta ciudadana pública */}
+            <Route path="/reportar-denuncia" element={<ReportCrimePage />} />
 
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<LoginPage />} />
@@ -83,6 +92,7 @@ function App() {
                 <Route path="metricas" element={<ModelMetricsPage />} />
                 <Route path="monitor" element={<MonitorPage />} />
                 <Route path="administracion" element={<AdminPage />} />
+                <Route path="denuncias" element={<InboxPage />} />
               </Route>
             </Route>
 
