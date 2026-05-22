@@ -4,6 +4,7 @@ import { AuthLayout } from '../../components/auth/AuthLayout'
 import { OtpInput } from '../../components/auth/OtpInput'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
+import { apiClient } from '../../api/client'
 
 export function ForgotPasswordCodePage() {
   const navigate = useNavigate()
@@ -15,12 +16,17 @@ export function ForgotPasswordCodePage() {
     return <Navigate to="/forgot-password" replace />
   }
 
-  const isValid = code.length === 4
+  const isValid = code.length === 6
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!isValid) return
-    navigate('/forgot-password/new', { state: { email } })
+    try {
+      await apiClient.post('/auth/verify-code', { email, code })
+      navigate('/forgot-password/new', { state: { email, code } })
+    } catch (err: any) {
+      alert("Error: " + (err.response?.data?.detail || "Código incorrecto."))
+    }
   }
 
   return (

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Bar,
   BarChart,
@@ -11,40 +12,100 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
-import {
-  PREDICTION_VS_HISTORY,
-  RISK_BY_HOUR,
-  ZONE_COMPARISON,
-} from '../../data/mockData'
+import { apiClient } from '../../api/client'
 
 export function PredictionsPage() {
+  const [distrito, setDistrito] = useState<string>('TODOS')
+  const [distritosDb, setDistritosDb] = useState<string[]>([])
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Cargar lista de distritos
+  useEffect(() => {
+    const fetchDistritos = async () => {
+      try {
+        const res = await apiClient.get('/predict/distritos')
+        if (res.data && res.data.success) {
+          setDistritosDb(res.data.data)
+        }
+      } catch (err) {
+        console.error("Error fetching distritos list:", err)
+      }
+    }
+    fetchDistritos()
+  }, [])
+
+  // Cargar detalles de la predicción cuando cambia el distrito
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+
+    const fetchDetalles = async () => {
+      setLoading(true)
+      try {
+        const res = await apiClient.get(`/predict/detalles?distrito=${distrito}`, { signal: controller.signal })
+        if (active && res.data && res.data.success) {
+          setData(res.data)
+        }
+      } catch (err: any) {
+        if (err.name !== 'CanceledError') {
+          console.error("Error fetching prediction details:", err)
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    fetchDetalles()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [distrito])
+
+  const predictionVsHistory = data?.prediction_vs_history || []
+  const riskByHour = data?.risk_by_hour || []
+  const zoneComparison = data?.zone_comparison || []
+
   return (
     <>
       <PageHeader
         title="Predicciones IA"
         subtitle="Análisis predictivo basado en modelo GNN espacio-temporal"
       >
-        <select className="dash-select" defaultValue="centro">
-          <option>Centro Histórico</option>
-        </select>
-        <select className="dash-select" defaultValue="7d">
-          <option>Próximos 7 días</option>
+        <select
+          className="dash-select"
+          value={distrito}
+          onChange={(e) => setDistrito(e.target.value)}
+          style={{ minWidth: '200px' }}
+        >
+          <option value="TODOS">TODOS (Lima Metropolitana)</option>
+          {distritosDb.map(d => (
+            <option key={d} value={d}>{d}</option>
+          ))}
         </select>
       </PageHeader>
-      <div className="dash-content">
+      <div className="dash-content" style={{ position: 'relative' }}>
+        {loading && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+            Cargando Análisis Predictivo...
+          </div>
+        )}
+
         <div className="dash-alert-card">
-          <h3>Centro Histórico</h3>
+          <h3>Distrito Seleccionado: {distrito}</h3>
           <p style={{ margin: 0, fontSize: '0.875rem' }}>
             <strong>88%</strong> Confiabilidad del modelo · Probabilidad de incremento delictivo:{' '}
             <strong>88%</strong> · Nivel de Riesgo: <strong>Alto</strong> · Tendencia:{' '}
-            <strong>Ascendente</strong>
+            <strong>Estable</strong>
           </p>
         </div>
 
         <div className="dash-card" style={{ marginBottom: '1rem' }}>
-          <h3>Predicción vs Histórico</h3>
+          <h3>Predicción vs Histórico (Últimos 7 días)</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={PREDICTION_VS_HISTORY}>
+            <LineChart data={predictionVsHistory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
@@ -58,23 +119,23 @@ export function PredictionsPage() {
 
         <div className="dash-grid-2">
           <div className="dash-card">
-            <h3>Riesgo por Hora — Próximas 24h</h3>
+            <h3>Riesgo por Hora (Bloques de 3 horas)</h3>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={RISK_BY_HOUR}>
+              <BarChart data={riskByHour}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="hour" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="risk" fill="#f97316" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="risk" fill="#f97316" radius={[4, 4, 0, 0]} name="Intensidad de Riesgo" />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="dash-card">
-            <h3>Indicadores de Probabilidad</h3>
+            <h3>Indicadores de Probabilidad (Próximos días)</h3>
             {[
-              { day: 'Vie 25', pct: 83 },
-              { day: 'Sáb 26', pct: 79 },
-              { day: 'Dom 27', pct: 72 },
+              { day: 'Vie 22', pct: 83 },
+              { day: 'Sáb 23', pct: 79 },
+              { day: 'Dom 24', pct: 72 },
             ].map((d) => (
               <div key={d.day} className="dash-progress-row">
                 <div className="dash-progress-row__head">
@@ -93,9 +154,9 @@ export function PredictionsPage() {
         </div>
 
         <div className="dash-card" style={{ marginTop: '1rem' }}>
-          <h3>Comparación de Zonas</h3>
+          <h3>Comparación de Zonas de Mayor Riesgo</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
-            {ZONE_COMPARISON.map((z) => (
+            {zoneComparison.map((z: any) => (
               <div key={z.zone} className="dash-zone-card">
                 <div className="dash-zone-card__head">
                   <span>{z.zone}</span>
@@ -122,7 +183,7 @@ export function PredictionsPage() {
             <div><span>Precisión</span><strong>94.2%</strong></div>
             <div><span>F1-Score</span><strong>0.89</strong></div>
             <div><span>Última Act.</span><strong>15 min</strong></div>
-            <div><span>Datos</span><strong>2.3M</strong></div>
+            <div><span>Datos</span><strong>Histórico BD</strong></div>
           </div>
         </div>
       </div>

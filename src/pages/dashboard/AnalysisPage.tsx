@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Area,
   AreaChart,
@@ -16,25 +17,72 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
-import {
-  ANALYSIS_KPIS,
-  CRIME_DISTRIBUTION,
-  HOURLY_PATTERN,
-  MONTHLY_BY_TYPE,
-  WEEKDAY_PATTERN,
-  ZONE_TABLE,
-} from '../../data/mockData'
+import { apiClient } from '../../api/client'
 
 export function AnalysisPage() {
+  const [anio, setAnio] = useState<string>('todos')
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+
+    const fetchAnalysis = async () => {
+      setLoading(true)
+      try {
+        const url = anio !== 'todos' ? `/dashboard/analisis?anio=${anio}` : '/dashboard/analisis'
+        const res = await apiClient.get(url, { signal: controller.signal })
+        if (active && res.data && res.data.success) {
+          setData(res.data.data)
+        }
+      } catch (err: any) {
+        if (err.name !== 'CanceledError') {
+          console.error("Error loading analysis data:", err)
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    fetchAnalysis()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [anio])
+
+  const kpis = data?.kpis || []
+  const monthlyByType = data?.monthly_by_type || []
+  const hourlyPattern = data?.hourly_pattern || []
+  const weeklyPattern = data?.weekly_pattern || []
+  const crimeDistribution = data?.crime_distribution || []
+  const zoneTable = data?.zone_table || []
+
   return (
     <>
       <PageHeader title="Análisis Avanzado" subtitle="Exploración profunda de patrones delictivos">
-        <select className="dash-select"><option>Últimos 30 días</option></select>
-        <select className="dash-select"><option>Todos los delitos</option></select>
+        <select 
+          className="dash-select" 
+          value={anio} 
+          onChange={(e) => setAnio(e.target.value)}
+        >
+          <option value="todos">Últimos 30 días</option>
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+        </select>
       </PageHeader>
-      <div className="dash-content">
+      <div className="dash-content" style={{ position: 'relative' }}>
+        {loading && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+            Cargando Análisis Avanzado...
+          </div>
+        )}
+        
         <div className="dash-kpi-grid">
-          {ANALYSIS_KPIS.map((k) => (
+          {kpis.map((k: any) => (
             <div key={k.label} className="dash-kpi">
               <p className="dash-kpi__label">{k.label}</p>
               <p className="dash-kpi__value">{k.value}</p>
@@ -46,16 +94,16 @@ export function AnalysisPage() {
         <div className="dash-card" style={{ marginBottom: '1rem' }}>
           <h3>Tendencia Mensual por Tipo de Delito</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={MONTHLY_BY_TYPE}>
+            <AreaChart data={monthlyByType}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
-              <Area type="monotone" dataKey="robo" stackId="1" stroke="#ef4444" fill="#fecaca" />
-              <Area type="monotone" dataKey="asalto" stackId="1" stroke="#f97316" fill="#fed7aa" />
-              <Area type="monotone" dataKey="vandalismo" stackId="1" stroke="#eab308" fill="#fef08a" />
-              <Area type="monotone" dataKey="fraude" stackId="1" stroke="#3b82f6" fill="#bfdbfe" />
+              <Area type="monotone" dataKey="robo" stackId="1" stroke="#ef4444" fill="#fecaca" name="Robo" />
+              <Area type="monotone" dataKey="asalto" stackId="1" stroke="#f97316" fill="#fed7aa" name="Asalto/Hurto" />
+              <Area type="monotone" dataKey="vandalismo" stackId="1" stroke="#eab308" fill="#fef08a" name="Vandalismo" />
+              <Area type="monotone" dataKey="fraude" stackId="1" stroke="#3b82f6" fill="#bfdbfe" name="Fraude/Otros" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -64,24 +112,24 @@ export function AnalysisPage() {
           <div className="dash-card">
             <h3>Patrón Horario</h3>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={HOURLY_PATTERN}>
+              <BarChart data={hourlyPattern}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="hour" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="v" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="v" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Incidentes" />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="dash-card">
             <h3>Patrón por Día de Semana</h3>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={WEEKDAY_PATTERN}>
+              <LineChart data={weeklyPattern}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} />
+                <Line type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2} name="Incidentes" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -92,8 +140,8 @@ export function AnalysisPage() {
             <h3>Distribución de Delitos</h3>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={CRIME_DISTRIBUTION} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                  {CRIME_DISTRIBUTION.map((e) => (
+                <Pie data={crimeDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                  {crimeDistribution.map((e: any) => (
                     <Cell key={e.name} fill={e.color} />
                   ))}
                 </Pie>
@@ -112,17 +160,19 @@ export function AnalysisPage() {
                   <th>Mar</th>
                   <th>Abr</th>
                   <th>May</th>
+                  <th>Jun</th>
                 </tr>
               </thead>
               <tbody>
-                {ZONE_TABLE.map((row) => (
+                {zoneTable.map((row: any) => (
                   <tr key={row.zone}>
                     <td><strong>{row.zone}</strong></td>
-                    <td>{row.ene}</td>
-                    <td>{row.feb}</td>
-                    <td>{row.mar}</td>
-                    <td>{row.abr}</td>
-                    <td>{row.may}</td>
+                    <td>{row.ene || 0}</td>
+                    <td>{row.feb || 0}</td>
+                    <td>{row.mar || 0}</td>
+                    <td>{row.abr || 0}</td>
+                    <td>{row.may || 0}</td>
+                    <td>{row.jun || 0}</td>
                   </tr>
                 ))}
               </tbody>

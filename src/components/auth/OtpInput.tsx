@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent, type ClipboardEvent } from 'react'
 
-const LENGTH = 4
+const LENGTH = 6
 
 type OtpInputProps = {
   value: string

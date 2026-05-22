@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { useNavigate } from 'react-router-dom'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { apiClient } from '../../api/client'
@@ -23,6 +24,7 @@ function MapClickHandler({ setPosition }: { setPosition: (pos: [number, number])
 }
 
 export function ReportCrimePage() {
+  const navigate = useNavigate()
   const [position, setPosition] = useState<[number, number] | null>(null)
   const [tipoDelito, setTipoDelito] = useState('1') // 1: Robo, 2: Hurto
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
@@ -68,8 +70,19 @@ export function ReportCrimePage() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', padding: '2rem' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', background: '#111', padding: '2rem', borderRadius: '12px', border: '1px solid #333' }}>
-        <h1 style={{ marginBottom: '1rem', color: '#3b82f6' }}>Plataforma de Denuncia Ciudadana Anónima</h1>
-        <p style={{ color: '#aaa', marginBottom: '2rem' }}>Su reporte ayuda a la Policía Nacional del Perú a identificar nuevos puntos críticos y optimizar el patrullaje inteligente (GNN).</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <h1 style={{ margin: 0, color: '#3b82f6' }}>Plataforma de Denuncia Ciudadana Anónima</h1>
+            <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Su reporte ayuda a la Policía Nacional del Perú a identificar nuevos puntos críticos y optimizar el patrullaje inteligente (GNN).</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => navigate('/login')}
+            style={{ padding: '0.5rem 1rem', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+          >
+            🔒 Acceso PNP
+          </button>
+        </div>
 
         {mensaje && (
           <div style={{ 

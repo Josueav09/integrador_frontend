@@ -4,6 +4,7 @@ import { AuthLayout } from '../../components/auth/AuthLayout'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
+import { apiClient } from '../../api/client'
 
 export function ForgotPasswordEmailPage() {
   const navigate = useNavigate()
@@ -11,10 +12,15 @@ export function ForgotPasswordEmailPage() {
 
   const isValid = email.trim().length > 0 && email.includes('@')
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!isValid) return
-    navigate('/forgot-password/code', { state: { email } })
+    try {
+      await apiClient.post('/auth/forgot-password', { email })
+      navigate('/forgot-password/code', { state: { email } })
+    } catch (err: any) {
+      alert("Error al enviar solicitud: " + (err.response?.data?.detail || err.message))
+    }
   }
 
   return (

@@ -67,7 +67,7 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Navigate to="/reportar-denuncia" replace />} />
             
             {/* Ruta ciudadana pública */}
             <Route path="/reportar-denuncia" element={<ReportCrimePage />} />

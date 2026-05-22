@@ -19,22 +19,39 @@ import { chartAxisTick, chartGridStroke, chartTooltipStyle } from '../../utils/c
 export function DashboardPage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [selectedYear, setSelectedYear] = useState<string>('')
 
   useEffect(() => {
+    const controller = new AbortController()
+    const signal = controller.signal
+
     const fetchData = async () => {
+      setLoading(true)
       try {
-        const res = await apiClient.get('/dashboard/kpis')
+        const url = selectedYear ? `/dashboard/kpis?anio=${selectedYear}` : '/dashboard/kpis'
+        const res = await apiClient.get(url, { signal })
         if (res.data && res.data.success) {
           setData(res.data.data)
         }
-      } catch (err) {
-        console.error("Error fetching dashboard kpis", err)
+      } catch (err: any) {
+        if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
+          console.log("Petición de KPIs cancelada (cambio de año rápido)")
+        } else {
+          console.error("Error fetching dashboard kpis", err)
+        }
       } finally {
-        setLoading(false)
+        // Solo quitamos el loading si la petición no fue cancelada
+        if (!signal.aborted) {
+          setLoading(false)
+        }
       }
     }
     fetchData()
-  }, [])
+
+    return () => {
+      controller.abort()
+    }
+  }, [selectedYear])
 
   if (loading) {
     return <div style={{ padding: '2rem', color: '#fff' }}>Cargando datos históricos...</div>
@@ -64,7 +81,18 @@ export function DashboardPage() {
       <PageHeader
         title="Dashboard Analítico"
         subtitle="Monitoreo en tiempo real del sistema de pronóstico"
-      />
+      >
+        <select 
+          className="dash-select" 
+          value={selectedYear} 
+          onChange={(e) => setSelectedYear(e.target.value)}
+        >
+          <option value="">Últimos 30 días</option>
+          <option value="2024">Año 2024</option>
+          <option value="2025">Año 2025</option>
+          <option value="2026">Año 2026</option>
+        </select>
+      </PageHeader>
       <div className="dash-content">
         <div className="dash-kpi-grid">
           {kpis.map((kpi) => (
@@ -80,7 +108,7 @@ export function DashboardPage() {
 
         <div className="dash-grid-2">
           <div className="dash-card">
-            <h3>Delitos por Tipo (Últimos 30 días)</h3>
+            <h3>Delitos por Tipo ({selectedYear ? `Año ${selectedYear}` : 'Últimos 30 días'})</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={delitosPorTipo} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
@@ -96,7 +124,7 @@ export function DashboardPage() {
             </ResponsiveContainer>
           </div>
           <div className="dash-card">
-            <h3>Tendencia Semanal</h3>
+            <h3>Tendencia Temporal</h3>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={tendenciaSemanal} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />

@@ -1,10 +1,45 @@
+import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
-import { GNN_CORRELATIONS, GNN_EDGES, GNN_NODES } from '../../data/mockData'
+import { apiClient } from '../../api/client'
 
 const RISK_COLORS = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }
 
 export function GnnNetworkPage() {
-  const nodeMap = Object.fromEntries(GNN_NODES.map((n) => [n.id, n]))
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+
+    const fetchGrafo = async () => {
+      setLoading(true)
+      try {
+        const res = await apiClient.get('/predict/grafo', { signal: controller.signal })
+        if (active && res.data && res.data.success) {
+          setData(res.data)
+        }
+      } catch (err: any) {
+        if (err.name !== 'CanceledError') {
+          console.error("Error fetching GNN graph:", err)
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    fetchGrafo()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [])
+
+  const nodes = data?.nodos || []
+  const edges = data?.aristas || []
+  const correlations = data?.correlaciones || []
+  const nodeMap = Object.fromEntries(nodes.map((n: any) => [n.id, n]))
 
   return (
     <>
@@ -12,16 +47,22 @@ export function GnnNetworkPage() {
         title="Visualización de Red (GNN)"
         subtitle="Análisis de conexiones y patrones delictivos entre zonas"
       />
-      <div className="dash-content">
+      <div className="dash-content" style={{ position: 'relative' }}>
+        {loading && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+            Cargando Topología GNN...
+          </div>
+        )}
+
         <div className="dash-kpi-grid">
           <div className="dash-kpi">
             <p className="dash-kpi__label">Nodos Activos</p>
-            <p className="dash-kpi__value">6</p>
+            <p className="dash-kpi__value">{nodes.length}</p>
             <p className="dash-kpi__sub">Zonas monitoreadas</p>
           </div>
           <div className="dash-kpi">
             <p className="dash-kpi__label">Conexiones</p>
-            <p className="dash-kpi__value">10</p>
+            <p className="dash-kpi__value">{edges.length}</p>
             <p className="dash-kpi__sub">Relaciones detectadas</p>
           </div>
           <div className="dash-kpi">
@@ -35,7 +76,7 @@ export function GnnNetworkPage() {
           <div className="dash-card">
             <h3>Grafo de Relaciones</h3>
             <svg className="dash-gnn-graph" viewBox="0 0 460 280" width="100%">
-              {GNN_EDGES.map((e) => {
+              {edges.map((e: any) => {
                 const from = nodeMap[e.from]
                 const to = nodeMap[e.to]
                 if (!from || !to) return null
@@ -52,13 +93,13 @@ export function GnnNetworkPage() {
                   />
                 )
               })}
-              {GNN_NODES.map((n) => (
+              {nodes.map((n: any) => (
                 <g key={n.id}>
                   <circle
                     cx={n.x}
                     cy={n.y}
                     r={n.size / 2}
-                    fill={RISK_COLORS[n.risk as keyof typeof RISK_COLORS]}
+                    fill={RISK_COLORS[n.risk as keyof typeof RISK_COLORS] || '#22c55e'}
                     opacity={0.85}
                   />
                   <text
@@ -87,7 +128,7 @@ export function GnnNetworkPage() {
             </div>
             <div className="dash-card">
               <h3>Correlaciones Más Fuertes</h3>
-              {GNN_CORRELATIONS.map((c) => (
+              {correlations.map((c: any) => (
                 <div key={c.pair} className="dash-correlation">
                   <span>{c.pair}</span>
                   <strong>{c.value}%</strong>

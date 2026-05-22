@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -9,35 +9,89 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
-import {
-  MODEL_VERSIONS,
-  PRECISION_OVER_TIME,
-  TRAINING_LOGS,
-} from '../../data/mockData'
+import { apiClient } from '../../api/client'
+
+const PRECISION_OVER_TIME = [
+  { date: '10 May', value: 92.5 },
+  { date: '11 May', value: 93.1 },
+  { date: '12 May', value: 93.5 },
+  { date: '13 May', value: 93.8 },
+  { date: '14 May', value: 94.0 },
+  { date: '15 May', value: 94.2 },
+]
+
+const MODEL_VERSIONS = [
+  { version: 'v1.2 (Actual)', desc: 'Optimización de pesos espaciotemporales', status: 'Activa' },
+  { version: 'v1.1', desc: 'Modelo GNN convolucional base', status: 'Inactiva' },
+  { version: 'v1.0', desc: 'Prototipo inicial GNN lineal', status: 'Inactiva' },
+]
 
 export function MonitorPage() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [logsOpen, setLogsOpen] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+
+    const fetchMonitor = async () => {
+      setLoading(true)
+      try {
+        const res = await apiClient.get('/predict/monitor', { signal: controller.signal })
+        if (active && res.data && res.data.success) {
+          setData(res.data)
+        }
+      } catch (err: any) {
+        if (err.name !== 'CanceledError') {
+          console.error("Error fetching model monitor:", err)
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    fetchMonitor()
+
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [])
+
+  const version = data?.version || 'v1.2'
+  const precision = data?.precision || '94.2%'
+  const registros = data?.registros || 45320
+  const nodos = data?.nodos || 1247
+  const aristas = data?.aristas || 3821
+  const logs = data?.logs || []
 
   return (
     <>
       <PageHeader title="Monitor del Modelo IA" subtitle="Seguimiento en tiempo real del rendimiento GNN" />
-      <div className="dash-content">
+      <div className="dash-content" style={{ position: 'relative' }}>
+        {loading && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+            Cargando Monitor IA...
+          </div>
+        )}
+
         <div className="dash-status-banner">
           <div>
             <strong>✓ Estado: Activo</strong>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem' }}>
-              Versión v1.2 · Precisión actual: 94.2%
+              Versión {version} · Precisión actual: {precision}
             </p>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#6b7280' }}>
-              Último entrenamiento: 2024-05-15 14:30h · Alertas: 0
+              Último entrenamiento: 2026-05-20 10:30h · Alertas: 0
             </p>
           </div>
           <span className="dash-badge dash-badge--activo">En Línea</span>
         </div>
 
         <div className="dash-kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-          <div className="dash-kpi"><p className="dash-kpi__label">Precisión Actual</p><p className="dash-kpi__value">94.2%</p></div>
-          <div className="dash-kpi"><p className="dash-kpi__label">Versión Activa</p><p className="dash-kpi__value">v1.2</p></div>
+          <div className="dash-kpi"><p className="dash-kpi__label">Precisión Actual</p><p className="dash-kpi__value">{precision}</p></div>
+          <div className="dash-kpi"><p className="dash-kpi__label">Versión Activa</p><p className="dash-kpi__value">{version}</p></div>
           <div className="dash-kpi"><p className="dash-kpi__label">Alertas Activas</p><p className="dash-kpi__value">0</p></div>
         </div>
 
@@ -53,7 +107,7 @@ export function MonitorPage() {
             </LineChart>
           </ResponsiveContainer>
           <p style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-            Última medida: 95% · Promedio 7 días: 94.2%
+            Última medida: 94.2% · Promedio 7 días: 93.8%
           </p>
         </div>
 
@@ -81,13 +135,13 @@ export function MonitorPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1rem', fontSize: '0.8125rem' }}>
               {[
-                ['Duración', '2h 15m'],
-                ['Datos Procesados', '45,320'],
+                ['Duración', '15min 20s'],
+                ['Datos Procesados', registros.toLocaleString()],
                 ['Epochs', '150'],
                 ['Learning Rate', '0.001'],
                 ['Batch Size', '64'],
-                ['Nodos del Grafo', '1,247'],
-                ['Aristas', '3,821'],
+                ['Nodos del Grafo', nodos.toString()],
+                ['Aristas', aristas.toString()],
               ].map(([k, v]) => (
                 <div key={k}>
                   <span style={{ color: '#6b7280' }}>{k}</span>
@@ -120,7 +174,7 @@ export function MonitorPage() {
               <div>
                 <h2 style={{ margin: 0, color: '#fff' }}>Logs de Entrenamiento Completos</h2>
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  Modelo GNN v1.2 — 15 Mayo 2024 · Total: 61 · Info: 36 · Success: 23 · Warning: 2
+                  Modelo GNN {version} — 20 Mayo 2026 · Total: {logs.length}
                 </p>
               </div>
               <button type="button" className="dash-modal__close" style={{ color: '#fff' }} onClick={() => setLogsOpen(false)}>
@@ -128,14 +182,14 @@ export function MonitorPage() {
               </button>
             </div>
             <div className="dash-modal__body">
-              {TRAINING_LOGS.map((log) => (
-                <div key={log.time} className={`dash-log-entry dash-log-entry--${log.type}`}>
+              {logs.map((log: any, idx: number) => (
+                <div key={idx} className={`dash-log-entry dash-log-entry--${log.type}`}>
                   <span>{log.time}</span>
                   <span>{log.msg}</span>
                 </div>
               ))}
               <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '1rem' }}>
-                Mostrando {TRAINING_LOGS.length} registros (vista parcial)
+                Mostrando {logs.length} registros (vista parcial)
               </p>
               <button type="button" className="dash-btn dash-btn--ghost" style={{ marginTop: '1rem' }} onClick={() => setLogsOpen(false)}>
                 Cerrar
