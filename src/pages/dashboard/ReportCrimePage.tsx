@@ -106,6 +106,7 @@ export function ReportCrimePage() {
                 value={tipoDelito} 
                 onChange={(e) => setTipoDelito(e.target.value)}
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff' }}
+                data-testid="report-crime-type-select"
               >
                 <option value="1">Robo agravado (Con violencia/arma)</option>
                 <option value="2">Hurto simple (Sin violencia)</option>
@@ -122,6 +123,7 @@ export function ReportCrimePage() {
                   max={new Date().toISOString().split('T')[0]}
                   required
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff' }}
+                  data-testid="report-crime-date-input"
                 />
               </div>
               <div style={{ flex: 1 }}>
@@ -132,6 +134,7 @@ export function ReportCrimePage() {
                   onChange={(e) => setHora(e.target.value)}
                   required
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff' }}
+                  data-testid="report-crime-time-input"
                 />
               </div>
             </div>
@@ -145,6 +148,7 @@ export function ReportCrimePage() {
                 required
                 placeholder="Describa brevemente cómo ocurrieron los hechos... (Evite proporcionar datos personales)"
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff', resize: 'vertical' }}
+                data-testid="report-crime-desc-textarea"
               />
             </div>
 
@@ -162,6 +166,7 @@ export function ReportCrimePage() {
                 cursor: (!position || loading) ? 'not-allowed' : 'pointer',
                 transition: 'background 0.3s'
               }}
+              data-testid="report-crime-submit-btn"
             >
               {loading ? 'Enviando reporte...' : 'Enviar Reporte a la PNP'}
             </button>
@@ -170,7 +175,10 @@ export function ReportCrimePage() {
           {/* Columna Derecha: Mapa Leaflet */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Ubicación Exacta (Haga clic en el mapa)</label>
-            <div style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', border: position ? '2px solid #22c55e' : '2px solid #ef4444' }}>
+            <div 
+              style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', border: position ? '2px solid #22c55e' : '2px solid #ef4444' }}
+              data-testid="report-crime-map-container"
+            >
               <MapContainer 
                 center={[-12.0464, -77.0428]} 
                 zoom={12} 

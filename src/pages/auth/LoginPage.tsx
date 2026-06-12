@@ -53,6 +53,7 @@ export function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          data-testid="login-email-input"
         />
         <TextField
           id="login-password"
@@ -64,8 +65,9 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
+          data-testid="login-password-input"
         />
-        <PrimaryButton disabled={!isValid || loading}>
+        <PrimaryButton disabled={!isValid || loading} data-testid="login-submit-button">
           {loading ? 'Iniciando...' : 'Iniciar sesión'}
         </PrimaryButton>
         <p className="auth-footer">

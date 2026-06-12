@@ -40,6 +40,7 @@ export function RegisterPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
+          data-testid="register-name-input"
         />
         <TextField
           id="register-email"
@@ -49,6 +50,7 @@ export function RegisterPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          data-testid="register-email-input"
         />
         <TextField
           id="register-password"
@@ -59,8 +61,9 @@ export function RegisterPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
+          data-testid="register-password-input"
         />
-        <PrimaryButton disabled={!isValid}>Crear cuenta</PrimaryButton>
+        <PrimaryButton disabled={!isValid} data-testid="register-submit-button">Crear cuenta</PrimaryButton>
         <p className="auth-footer">
           ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
         </p>

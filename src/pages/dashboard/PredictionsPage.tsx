@@ -79,6 +79,7 @@ export function PredictionsPage() {
           value={distrito}
           onChange={(e) => setDistrito(e.target.value)}
           style={{ minWidth: '200px' }}
+          data-testid="predictions-district-select"
         >
           <option value="TODOS">TODOS (Lima Metropolitana)</option>
           {distritosDb.map(d => (
@@ -88,7 +89,10 @@ export function PredictionsPage() {
       </PageHeader>
       <div className="dash-content" style={{ position: 'relative' }}>
         {loading && (
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+          <div 
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.4)', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}
+            data-testid="predictions-loading"
+          >
             Cargando Análisis Predictivo...
           </div>
         )}
