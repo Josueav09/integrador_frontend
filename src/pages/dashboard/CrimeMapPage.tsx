@@ -112,6 +112,7 @@ export function CrimeMapPage() {
               type="button"
               className={mode === 'historico' ? 'active' : ''}
               onClick={() => setMode('historico')}
+              data-testid="map-mode-historical-btn"
             >
               Histórico
             </button>
@@ -119,6 +120,7 @@ export function CrimeMapPage() {
               type="button"
               className={mode === 'prediccion' ? 'active' : ''}
               onClick={() => setMode('prediccion')}
+              data-testid="map-mode-prediction-btn"
             >
               Predicción IA
             </button>
@@ -128,6 +130,7 @@ export function CrimeMapPage() {
             className="dash-select"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
+            data-testid="map-type-select"
           >
             {TIPOS_DELITO.map(t => (
               <option key={t.id} value={t.id}>{t.label}</option>
@@ -139,6 +142,7 @@ export function CrimeMapPage() {
             value={distritoInput}
             onChange={(e) => setDistritoInput(e.target.value)}
             style={{ minWidth: '200px' }}
+            data-testid="map-district-select"
           >
             <option value="TODOS">TODOS (Lima Metropolitana)</option>
             {distritosDb.length === 0 && <option value="LIMA CENTRO">LIMA CENTRO</option>}
@@ -150,6 +154,7 @@ export function CrimeMapPage() {
           <button
             type="button"
             className="dash-btn dash-btn--primary"
+            data-testid="map-apply-filters-btn"
             onClick={() => {
               if (mode === 'prediccion') {
                 fetchPredictions();
@@ -166,7 +171,10 @@ export function CrimeMapPage() {
           {/* FASE 2: Leaflet + CartoDB Dark Matter */}
           <div className="dash-map" style={{ padding: 0, overflow: 'hidden', borderRadius: '1rem', position: 'relative' }}>
             {loading && (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff' }}>
+              <div 
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#fff' }}
+                data-testid="map-loading-overlay"
+              >
                 Ejecutando Inferencia GNN...
               </div>
             )}

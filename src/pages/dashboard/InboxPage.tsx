@@ -52,7 +52,7 @@ export function InboxPage() {
       <div className="dash-content">
         <div className="dash-card">
           <div className="dash-table-wrap">
-            <table className="dash-table">
+            <table className="dash-table" data-testid="inbox-table">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -86,6 +86,7 @@ export function InboxPage() {
                             className="dash-btn dash-btn--primary"
                             onClick={() => handleAction(d.id_denuncia_ciudadana, 'aprobar')}
                             title="Validar y transferir a la DB oficial"
+                            data-testid="inbox-approve-btn"
                           >
                             Aprobar
                           </button>
@@ -94,6 +95,7 @@ export function InboxPage() {
                             onClick={() => handleAction(d.id_denuncia_ciudadana, 'rechazar')}
                             style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444' }}
                             title="Descartar reporte falso"
+                            data-testid="inbox-reject-btn"
                           >
                             Descartar
                           </button>

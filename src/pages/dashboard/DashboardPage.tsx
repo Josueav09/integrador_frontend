@@ -86,6 +86,7 @@ export function DashboardPage() {
           className="dash-select" 
           value={selectedYear} 
           onChange={(e) => setSelectedYear(e.target.value)}
+          data-testid="dashboard-year-select"
         >
           <option value="">Últimos 30 días</option>
           <option value="2024">Año 2024</option>
@@ -94,7 +95,7 @@ export function DashboardPage() {
         </select>
       </PageHeader>
       <div className="dash-content">
-        <div className="dash-kpi-grid">
+        <div className="dash-kpi-grid" data-testid="dashboard-kpi-grid">
           {kpis.map((kpi) => (
             <KpiCard
               key={kpi.label}
@@ -145,7 +146,7 @@ export function DashboardPage() {
         </div>
 
         <div className="dash-grid-2">
-          <div className="dash-card">
+          <div className="dash-card" data-testid="dashboard-critical-zones">
             <h3>Zonas más Peligrosas (Histórico Real)</h3>
             {data?.top_zonas?.map((a: any, i: number) => (
               <div key={i} className="dash-alert">

@@ -160,6 +160,7 @@ export function AdminPage() {
                     className="dash-upload-zone" 
                     onClick={() => fileInputRef.current?.click()}
                     style={{ cursor: 'pointer' }}
+                    data-testid="admin-upload-zone"
                   >
                     Haga clic aquí para seleccionar un archivo CSV o JSON
                     <br />
@@ -191,11 +192,12 @@ export function AdminPage() {
                   className={`dash-btn ${isRunning ? 'dash-btn--outline' : 'dash-btn--primary'}`}
                   onClick={handleRetrain}
                   disabled={isRunning}
+                  data-testid="admin-retrain-btn"
                 >
                   {isRunning ? '⟳ Reentrenando...' : '▶ Iniciar Reentrenamiento'}
                 </button>
               </div>
-              <div className="dash-terminal">
+              <div className="dash-terminal" data-testid="admin-terminal-logs">
                 {logs.map((line, idx) => (
                   <div key={idx}>{line}</div>
                 ))}
@@ -204,7 +206,7 @@ export function AdminPage() {
 
             <div className="dash-card" style={{ marginBottom: '1rem' }}>
               <h3>Estado del Pipeline</h3>
-              <div className="dash-pipeline">
+              <div className="dash-pipeline" data-testid="admin-pipeline-steps">
                 {pipeline.map((step) => (
                   <div key={step.name} className={`dash-pipeline__step ${step.done ? 'done' : ''}`}>
                     <div style={{ fontSize: '1.25rem' }}>{step.done ? '✓' : '○'}</div>
