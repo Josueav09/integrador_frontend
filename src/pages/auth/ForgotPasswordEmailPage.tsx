@@ -5,21 +5,29 @@ import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
 import { apiClient } from '../../api/client'
+import { getApiErrorMessage } from '../../utils/apiError'
 
 export function ForgotPasswordEmailPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const isValid = email.trim().length > 0 && email.includes('@')
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!isValid) return
+    if (!isValid || loading) return
+
+    setError(null)
+    setLoading(true)
     try {
-      await apiClient.post('/auth/forgot-password', { email })
-      navigate('/forgot-password/code', { state: { email } })
-    } catch (err: any) {
-      alert("Error al enviar solicitud: " + (err.response?.data?.detail || err.message))
+      await apiClient.post('/auth/forgot-password', { email: email.trim() })
+      navigate('/forgot-password/code', { state: { email: email.trim() } })
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'No se pudo enviar el código de recuperación.'))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -31,6 +39,7 @@ export function ForgotPasswordEmailPage() {
           Ingresa tu correo electrónico y te enviaremos un código para que puedas
           restablecerla de manera segura.
         </p>
+        {error && <div className="auth-error-banner" role="alert">{error}</div>}
         <TextField
           id="forgot-email"
           label="Correo electrónico"
@@ -40,7 +49,9 @@ export function ForgotPasswordEmailPage() {
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
         />
-        <PrimaryButton disabled={!isValid}>Enviar código</PrimaryButton>
+        <PrimaryButton disabled={!isValid || loading}>
+          {loading ? 'Enviando...' : 'Enviar código'}
+        </PrimaryButton>
         <BackLink to="/login" />
       </form>
     </AuthLayout>

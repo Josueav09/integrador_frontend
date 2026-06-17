@@ -116,6 +116,26 @@ body {
   letter-spacing: -0.02em;
 }
 
+.auth-error-banner {
+  color: #b91c1c;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+  background: #fee2e2;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
+.auth-info-banner {
+  color: #1d4ed8;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  text-align: center;
+  background: #dbeafe;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+}
+
 .auth-form__subtitle {
   margin: 0 0 1.75rem;
   font-size: 0.875rem;

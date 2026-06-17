@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { apiClient } from '../../api/client'
+import { getApiErrorMessage } from '../../utils/apiError'
 
 // Fix default icon issue with Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -47,7 +48,7 @@ export function ReportCrimePage() {
       const payload = {
         id_tipo_delito: parseInt(tipoDelito),
         fecha_delito: fecha,
-        hora_delito: hora + ':00', // API espera formato de tiempo completo
+        hora_delito: hora.length === 5 ? `${hora}:00` : hora,
         latitud: position[0],
         longitud: position[1],
         descripcion: descripcion
@@ -59,9 +60,8 @@ export function ReportCrimePage() {
       setDescripcion('')
       setPosition(null)
       
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.detail || 'Error al registrar denuncia. Verifique su conexión o intente más tarde.'
-      setMensaje({ tipo: 'error', texto: errorMsg })
+    } catch (err: unknown) {
+      setMensaje({ tipo: 'error', texto: getApiErrorMessage(err, 'Error al registrar denuncia.') })
     } finally {
       setLoading(false)
     }

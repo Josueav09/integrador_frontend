@@ -3,6 +3,7 @@ import { PageHeader } from '../../components/dashboard/PageHeader'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { apiClient } from '../../api/client'
+import { normalizeHotspot } from '../../utils/hotspotCoords'
 
 const TIPOS_DELITO = [
   { id: 'TODOS', label: 'Todos los delitos' },
@@ -27,6 +28,9 @@ export function CrimeMapPage() {
   const [historico, setHistorico] = useState<any[]>([])
   const [zoneStats, setZoneStats] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  const consultaFecha = new Date().toISOString().split('T')[0]
 
   const fetchZoneStats = async (dist: string) => {
     try {
@@ -62,21 +66,24 @@ export function CrimeMapPage() {
     }
   }
 
-  // FASE 3: Consumo del Motor GNN
   const fetchPredictions = async () => {
     setLoading(true)
+    setFetchError(null)
     try {
-      // Llamada real al backend enviando la fecha, distrito y TIPO DE DELITO (Filtro Heurístico)
+      const distrito = distritoInput === 'TODOS' ? 'Lima' : distritoInput
       const res = await apiClient.post('/predict/predecir', {
-        fecha_consulta: '2026-05-20',
-        distrito: distritoInput || 'Lima',
-        tipo_delito: selectedType
+        fecha_consulta: consultaFecha,
+        distrito,
+        tipo_delito: selectedType,
       })
-      if (res.data && res.data.hotspots) {
-        setHotspots(res.data.hotspots)
+      if (res.data?.hotspots) {
+        const normalized = res.data.hotspots.map((h: any) => normalizeHotspot(h, distrito))
+        setHotspots(normalized)
       }
     } catch (err) {
-      console.error("Error al obtener predicciones GNN:", err)
+      console.error('Error al obtener predicciones GNN:', err)
+      setFetchError('No se pudieron cargar las predicciones. Verifique su sesión o el backend.')
+      setHotspots([])
     } finally {
       setLoading(false)
     }
@@ -155,17 +162,24 @@ export function CrimeMapPage() {
             type="button"
             className="dash-btn dash-btn--primary"
             data-testid="map-apply-filters-btn"
+            disabled={loading}
             onClick={() => {
               if (mode === 'prediccion') {
-                fetchPredictions();
+                fetchPredictions()
               } else {
-                fetchHistorico();
+                fetchHistorico()
               }
             }}
           >
-            Aplicar Filtros
+            {loading ? 'Cargando...' : 'Aplicar Filtros'}
           </button>
         </div>
+
+        {fetchError && (
+          <p style={{ color: '#b91c1c', fontSize: '0.875rem', marginBottom: '1rem' }} role="alert">
+            {fetchError}
+          </p>
+        )}
 
         <div className="dash-map-wrap">
           {/* FASE 2: Leaflet + CartoDB Dark Matter */}

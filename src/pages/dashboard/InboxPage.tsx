@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
 import { apiClient } from '../../api/client'
+import { getApiErrorMessage } from '../../utils/apiError'
 
 type Denuncia = {
   id_denuncia_ciudadana: number
@@ -14,15 +15,19 @@ type Denuncia = {
 export function InboxPage() {
   const [denuncias, setDenuncias] = useState<Denuncia[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [processingId, setProcessingId] = useState<number | null>(null)
 
   const fetchDenuncias = async () => {
+    setError(null)
     try {
       const res = await apiClient.get('/denuncias/pendientes')
-      if (res.data && res.data.success) {
+      if (res.data?.success) {
         setDenuncias(res.data.data)
       }
     } catch (err) {
-      console.error("Error al cargar denuncias pendientes", err)
+      console.error('Error al cargar denuncias pendientes', err)
+      setError(getApiErrorMessage(err, 'No se pudieron cargar las denuncias pendientes.'))
     } finally {
       setLoading(false)
     }
@@ -33,13 +38,16 @@ export function InboxPage() {
   }, [])
 
   const handleAction = async (id: number, action: 'aprobar' | 'rechazar') => {
+    setProcessingId(id)
+    setError(null)
     try {
       await apiClient.post(`/denuncias/${action}/${id}`)
-      // Actualizar la lista local
-      setDenuncias(prev => prev.filter(d => d.id_denuncia_ciudadana !== id))
+      setDenuncias((prev) => prev.filter((d) => d.id_denuncia_ciudadana !== id))
     } catch (err) {
       console.error(`Error al ${action} denuncia`, err)
-      alert(`No se pudo ${action} la denuncia. Consulte la consola para más detalles.`)
+      setError(getApiErrorMessage(err, `No se pudo ${action} la denuncia.`))
+    } finally {
+      setProcessingId(null)
     }
   }
 
@@ -50,6 +58,11 @@ export function InboxPage() {
         subtitle="Módulo de Cuarentena: Valide o descarte incidentes para alimentar el histórico oficial"
       />
       <div className="dash-content">
+        {error && (
+          <div className="dash-card" style={{ marginBottom: '1rem', color: '#b91c1c', background: '#fef2f2' }} role="alert">
+            {error}
+          </div>
+        )}
         <div className="dash-card">
           <div className="dash-table-wrap">
             <table className="dash-table" data-testid="inbox-table">
@@ -85,14 +98,16 @@ export function InboxPage() {
                           <button 
                             className="dash-btn dash-btn--primary"
                             onClick={() => handleAction(d.id_denuncia_ciudadana, 'aprobar')}
+                            disabled={processingId === d.id_denuncia_ciudadana}
                             title="Validar y transferir a la DB oficial"
                             data-testid="inbox-approve-btn"
                           >
-                            Aprobar
+                            {processingId === d.id_denuncia_ciudadana ? 'Procesando...' : 'Aprobar'}
                           </button>
                           <button 
                             className="dash-btn dash-btn--danger"
                             onClick={() => handleAction(d.id_denuncia_ciudadana, 'rechazar')}
+                            disabled={processingId === d.id_denuncia_ciudadana}
                             style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444' }}
                             title="Descartar reporte falso"
                             data-testid="inbox-reject-btn"
