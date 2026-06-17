@@ -6,18 +6,24 @@ import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
 import { apiClient } from '../../api/client'
 import { getApiErrorMessage } from '../../utils/apiError'
+import { getEmailError } from '../../utils/formValidation'
 
 export function ForgotPasswordEmailPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const isValid = email.trim().length > 0 && email.includes('@')
+  const isValid = !getEmailError(email)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!isValid || loading) return
+    if (loading) return
+
+    const nextEmailError = getEmailError(email)
+    setEmailError(nextEmailError)
+    if (nextEmailError) return
 
     setError(null)
     setLoading(true)
@@ -33,7 +39,7 @@ export function ForgotPasswordEmailPage() {
 
   return (
     <AuthLayout variant="recover">
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>Recuperar contraseña</h1>
         <p className="auth-form__subtitle">
           Ingresa tu correo electrónico y te enviaremos un código para que puedas
@@ -46,8 +52,14 @@ export function ForgotPasswordEmailPage() {
           type="email"
           placeholder="ejemplo@gmail.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (emailError) setEmailError(getEmailError(e.target.value))
+          }}
+          onBlur={() => setEmailError(getEmailError(email))}
           autoComplete="email"
+          hint="Usa el mismo correo con el que te registraste."
+          fieldError={emailError}
         />
         <PrimaryButton disabled={!isValid || loading}>
           {loading ? 'Enviando...' : 'Enviar código'}

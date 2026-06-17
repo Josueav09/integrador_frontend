@@ -259,6 +259,20 @@ body {
   padding-right: 2.75rem;
 }
 
+.auth-field__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--auth-muted);
+}
+
+.auth-field__hint--error {
+  color: #b91c1c;
+}
+
+.auth-field input.input--error {
+  border-color: #fca5a5;
+}
+
 .auth-btn {
   display: block;
   width: 100%;

@@ -10,9 +10,12 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 
 export function ModelMetricsPage() {
+  const { notifyApiError } = useNotification()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -29,7 +32,7 @@ export function ModelMetricsPage() {
         }
       } catch (err: any) {
         if (err.name !== 'CanceledError') {
-          console.error("Error fetching model metrics:", err)
+          notifyApiError(err, 'No se pudieron cargar las métricas del modelo.')
         }
       } finally {
         if (active) setLoading(false)
@@ -42,7 +45,7 @@ export function ModelMetricsPage() {
       active = false
       controller.abort()
     }
-  }, [])
+  }, [notifyApiError])
 
   const kpis = data?.kpis || []
   const monthly = data?.monthly || []
@@ -105,7 +108,13 @@ export function ModelMetricsPage() {
               </tr>
             </thead>
             <tbody>
-              {comparison.map((row: any) => (
+              {comparison.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState message="No hay comparaciones distrito a distrito para el período actual." />
+                  </td>
+                </tr>
+              ) : comparison.map((row: any) => (
                 <tr key={row.distrito}>
                   <td>{row.distrito}</td>
                   <td>{row.predicho}</td>

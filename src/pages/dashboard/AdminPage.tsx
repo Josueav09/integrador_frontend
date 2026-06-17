@@ -1,26 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { StatusBanner } from '../../components/ui/StatusBanner'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 import { getApiErrorMessage } from '../../utils/apiError'
-
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-const ALLOWED_EXTENSIONS = ['.csv', '.json']
-
-function validateUploadFile(file: File): string | null {
-  const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase()
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    return 'Solo se permiten archivos CSV o JSON.'
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return 'El archivo supera el límite de 10 MB.'
-  }
-  if (file.size === 0) {
-    return 'El archivo está vacío.'
-  }
-  return null
-}
+import { validateUploadFileContent } from '../../utils/uploadValidation'
 
 export function AdminPage() {
+  const { notifyApiError } = useNotification()
   const [pipeline, setPipeline] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
   const [logs, setLogs] = useState<string[]>([])
@@ -28,6 +15,7 @@ export function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [rbacError, setRbacError] = useState<string | null>(null)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
+  const [uploadStatusType, setUploadStatusType] = useState<'error' | 'info' | 'success'>('info')
   const [uploading, setUploading] = useState(false)
   const [retraining, setRetraining] = useState(false)
 
@@ -55,7 +43,7 @@ export function AdminPage() {
           'Acceso Denegado: Su rol no cuenta con permisos de Administrador o Investigador para gestionar esta sección.',
         )
       } else {
-        console.error('Error loading admin data:', err)
+        notifyApiError(err, 'No se pudo cargar el módulo de administración.')
       }
     } finally {
       setLoading(false)
@@ -83,7 +71,7 @@ export function AdminPage() {
             setLogs(logsRes.data.logs)
           }
         } catch (err) {
-          console.error('Error polling training status:', err)
+          notifyApiError(err, 'No se pudo actualizar el estado del reentrenamiento.')
         }
       }, 2500)
     }
@@ -100,9 +88,11 @@ export function AdminPage() {
         setIsRunning(true)
         setLogs((prev) => [...prev, '[REACT] Solicitud de reentrenamiento enviada...'])
       } else {
+        setUploadStatusType('error')
         setUploadStatus(res.data?.message || 'No se pudo iniciar el reentrenamiento.')
       }
     } catch (err: any) {
+      setUploadStatusType('error')
       if (err.response?.status === 403) {
         setUploadStatus('Acceso Denegado: Requiere rol Administrador o Investigador.')
       } else {
@@ -117,8 +107,9 @@ export function AdminPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const validationError = validateUploadFile(file)
+    const validationError = await validateUploadFileContent(file)
     if (validationError) {
+      setUploadStatusType('error')
       setUploadStatus(validationError)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
@@ -128,16 +119,25 @@ export function AdminPage() {
     formData.append('file', file)
 
     setUploading(true)
+    setUploadStatusType('info')
     setUploadStatus(`Subiendo "${file.name}"...`)
     try {
       const res = await apiClient.post('/admin/upload-csv', formData)
       if (res.data?.success) {
-        setUploadStatus(`Éxito: cargado "${res.data.filename}" con ${res.data.registros} registros.`)
+        const invalidos = Number(res.data.invalidos ?? 0)
+        setUploadStatusType(invalidos > 0 ? 'info' : 'success')
+        const extra =
+          invalidos > 0 ? ` (${invalidos} registros inválidos omitidos).` : '.'
+        setUploadStatus(
+          `Éxito: cargado "${res.data.filename}" con ${res.data.registros} registros válidos${extra}`,
+        )
         await loadData()
       } else {
-        setUploadStatus('Error al cargar el archivo.')
+        setUploadStatusType('error')
+        setUploadStatus(res.data?.message || 'Error al cargar el archivo.')
       }
     } catch (err: any) {
+      setUploadStatusType('error')
       if (err.response?.status === 403) {
         setUploadStatus('Error: Rol no autorizado (Requiere Administrador/Investigador).')
       } else {
@@ -226,17 +226,9 @@ export function AdminPage() {
                     <small>Estructura: id_cuadrante, id_tipo_delito, fecha_delito, ubicacion (máx. 10 MB)</small>
                   </div>
                   {uploadStatus && (
-                    <p
-                      style={{
-                        fontSize: '0.8125rem',
-                        color: uploadStatus.startsWith('Éxito') ? '#059669' : '#4f46e5',
-                        fontWeight: 'bold',
-                        marginTop: '0.5rem',
-                      }}
-                      role="status"
-                    >
-                      {uploadStatus}
-                    </p>
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <StatusBanner type={uploadStatusType} message={uploadStatus} />
+                    </div>
                   )}
                   <p style={{ fontSize: '0.75rem', color: '#ea580c', marginTop: '0.75rem' }}>
                     Los datos deben validarse antes del reentrenamiento del modelo.

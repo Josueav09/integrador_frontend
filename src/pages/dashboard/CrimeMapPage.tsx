@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useNotification } from '../../contexts/NotificationContext'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { apiClient } from '../../api/client'
@@ -14,6 +16,7 @@ const TIPOS_DELITO = [
 // Eliminado REAL_DISTRICTS mock, ahora consumimos data viva
 
 export function CrimeMapPage() {
+  const { notifyApiError } = useNotification()
   const [mode, setMode] = useState<'historico' | 'prediccion'>('historico')
 
   // States para Filtros Reales
@@ -28,7 +31,6 @@ export function CrimeMapPage() {
   const [historico, setHistorico] = useState<any[]>([])
   const [zoneStats, setZoneStats] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const consultaFecha = new Date().toISOString().split('T')[0]
 
@@ -39,7 +41,7 @@ export function CrimeMapPage() {
         setZoneStats(res.data.data)
       }
     } catch (err) {
-      console.error("Error fetching stats-distrito:", err)
+      notifyApiError(err, 'No se pudieron cargar las estadísticas del distrito.')
     }
   }
 
@@ -47,9 +49,10 @@ export function CrimeMapPage() {
     setLoading(true)
     try {
       const res = await apiClient.get('/dashboard/mapa-geojson')
-      setHistorico(res.data.data)
+      setHistorico(res.data.data ?? [])
     } catch (err) {
-      console.error("Error al obtener histórico geojson:", err)
+      notifyApiError(err, 'No se pudo cargar el mapa histórico.')
+      setHistorico([])
     } finally {
       setLoading(false)
     }
@@ -62,13 +65,12 @@ export function CrimeMapPage() {
         setDistritosDb(res.data.data)
       }
     } catch (err) {
-      console.error("Error fetching distritos:", err)
+      notifyApiError(err, 'No se pudo cargar la lista de distritos.')
     }
   }
 
   const fetchPredictions = async () => {
     setLoading(true)
-    setFetchError(null)
     try {
       const distrito = distritoInput === 'TODOS' ? 'Lima' : distritoInput
       const res = await apiClient.post('/predict/predecir', {
@@ -81,8 +83,7 @@ export function CrimeMapPage() {
         setHotspots(normalized)
       }
     } catch (err) {
-      console.error('Error al obtener predicciones GNN:', err)
-      setFetchError('No se pudieron cargar las predicciones. Verifique su sesión o el backend.')
+      notifyApiError(err, 'No se pudieron cargar las predicciones. Verifique su sesión o el backend.')
       setHotspots([])
     } finally {
       setLoading(false)
@@ -175,12 +176,6 @@ export function CrimeMapPage() {
           </button>
         </div>
 
-        {fetchError && (
-          <p style={{ color: '#b91c1c', fontSize: '0.875rem', marginBottom: '1rem' }} role="alert">
-            {fetchError}
-          </p>
-        )}
-
         <div className="dash-map-wrap">
           {/* FASE 2: Leaflet + CartoDB Dark Matter */}
           <div className="dash-map" style={{ padding: 0, overflow: 'hidden', borderRadius: '1rem', position: 'relative' }}>
@@ -250,6 +245,19 @@ export function CrimeMapPage() {
                 })
               )}
             </MapContainer>
+            {!loading &&
+              ((mode === 'historico' && historico.length === 0) ||
+                (mode === 'prediccion' && hotspots.length === 0)) && (
+                <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem', zIndex: 1000 }}>
+                  <EmptyState
+                    message={
+                      mode === 'historico'
+                        ? 'No hay incidentes históricos para los filtros seleccionados.'
+                        : 'No hay predicciones GNN disponibles para los filtros seleccionados.'
+                    }
+                  />
+                </div>
+              )}
           </div>
 
           <div>

@@ -31,6 +31,26 @@ La sesión se guarda en `localStorage` (mock). Las rutas del dashboard están pr
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción |
 | `npm run preview` | Vista previa del build |
+| `npm run test` | Pruebas Vitest en modo watch |
+| `npm run test:run` | Ejecutar suite de pruebas (CI) |
+| `npm run test:coverage` | Pruebas + reporte HTML en `coverage/index.html` |
+
+## Pruebas automatizadas (APF3)
+
+Suite con **Vitest** + **Testing Library**:
+
+- Login, registro, rutas protegidas (`ProtectedRoute` / `GuestRoute`)
+- Contexto de autenticación JWT
+- Validación de carga CSV/JSON (`uploadValidation`)
+- Mensajes de error API (`apiError`)
+
+Los elementos interactivos incluyen `data-testid` para pruebas E2E (Selenium/Playwright).
+
+```bash
+npm run test:coverage
+```
+
+Capturas del reporte en `coverage/index.html` para el informe APF3.
 
 ## Rama
 

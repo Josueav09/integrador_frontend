@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useUserModal } from '../../contexts/UserModalContext'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
-import { getApiErrorMessage } from '../../utils/apiError'
 
 type UserData = {
   id_usuario_sistema: number
@@ -14,6 +14,7 @@ type UserData = {
 
 export function UserManagementModal() {
   const { isOpen, close } = useUserModal()
+  const { notifyApiError, notifySuccess, notifyError } = useNotification()
   const [users, setUsers] = useState<UserData[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -32,7 +33,7 @@ export function UserManagementModal() {
       const res = await apiClient.get('/usuarios')
       setUsers(res.data)
     } catch (error) {
-      console.error("Error cargando usuarios:", error)
+      notifyApiError(error, 'No se pudieron cargar los usuarios.')
     } finally {
       setLoading(false)
     }
@@ -47,7 +48,7 @@ export function UserManagementModal() {
 
   const handleCreate = async () => {
     if (!nombre.trim() || !email.trim()) {
-      alert('Nombre y correo son obligatorios.')
+      notifyError('Nombre y correo son obligatorios.')
       return
     }
     setSaving(true)
@@ -57,13 +58,13 @@ export function UserManagementModal() {
         email: email.trim(),
         id_rol: rolId,
       })
-      alert('Usuario creado correctamente. El correo de bienvenida ha sido encolado.')
+      notifySuccess('Usuario creado correctamente. El correo de bienvenida ha sido encolado.')
       setNombre('')
       setEmail('')
       setShowForm(false)
       fetchUsers()
     } catch (err: unknown) {
-      alert(getApiErrorMessage(err, 'Error al crear usuario.'))
+      notifyApiError(err, 'Error al crear usuario.')
     } finally {
       setSaving(false)
     }
@@ -75,8 +76,7 @@ export function UserManagementModal() {
         await apiClient.delete(`/usuarios/${id}`)
         fetchUsers()
       } catch (err) {
-        console.error(err)
-        alert("Error al desactivar")
+        notifyApiError(err, 'Error al desactivar el usuario.')
       }
     }
   }

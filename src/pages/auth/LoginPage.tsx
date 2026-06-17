@@ -5,6 +5,7 @@ import { AuthLayout } from '../../components/auth/AuthLayout'
 import { GoogleButton } from '../../components/auth/GoogleButton'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
+import { getEmailError, getLoginPasswordError } from '../../utils/formValidation'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -13,6 +14,8 @@ export function LoginPage() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -26,11 +29,19 @@ export function LoginPage() {
     }
   }, [location.state, searchParams])
 
-  const isValid = email.trim().length > 0 && password.trim().length > 0
+  const isValid =
+    !getEmailError(email) &&
+    !getLoginPasswordError(password)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!isValid || loading) return
+    if (loading) return
+
+    const nextEmailError = getEmailError(email)
+    const nextPasswordError = getLoginPasswordError(password)
+    setEmailError(nextEmailError)
+    setPasswordError(nextPasswordError)
+    if (nextEmailError || nextPasswordError) return
 
     setError(null)
     setInfo(null)
@@ -51,7 +62,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login">
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>¡Bienvenido de nuevo!</h1>
         <GoogleButton onClick={handleGoogleLogin} />
         <p className="auth-divider">o ingresa con tu email</p>
@@ -65,8 +76,14 @@ export function LoginPage() {
           type="email"
           placeholder="ejemplo@gmail.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (emailError) setEmailError(getEmailError(e.target.value))
+          }}
+          onBlur={() => setEmailError(getEmailError(email))}
           autoComplete="email"
+          hint="Usa tu correo institucional registrado en el sistema."
+          fieldError={emailError}
           data-testid="login-email-input"
         />
         <TextField
@@ -77,8 +94,13 @@ export function LoginPage() {
           showToggle
           link={{ href: '/forgot-password', text: '¿Olvidaste?' }}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value)
+            if (passwordError) setPasswordError(getLoginPasswordError(e.target.value))
+          }}
+          onBlur={() => setPasswordError(getLoginPasswordError(password))}
           autoComplete="current-password"
+          fieldError={passwordError}
           data-testid="login-password-input"
         />
         <PrimaryButton disabled={!isValid || loading} data-testid="login-submit-button">

@@ -5,12 +5,16 @@ type TextFieldProps = {
   label: string
   link?: { href: string; text: string }
   showToggle?: boolean
+  hint?: string
+  fieldError?: string | null
 } & InputHTMLAttributes<HTMLInputElement>
 
 export function TextField({
   label,
   link,
   showToggle,
+  hint,
+  fieldError,
   type = 'text',
   className,
   ...props
@@ -33,7 +37,11 @@ export function TextField({
         <input
           {...props}
           type={inputType}
-          className={`${showToggle && isPassword ? 'has-toggle' : ''} ${className ?? ''}`}
+          className={`${showToggle && isPassword ? 'has-toggle' : ''} ${fieldError ? 'input--error' : ''} ${className ?? ''}`}
+          aria-invalid={fieldError ? true : undefined}
+          aria-describedby={
+            fieldError ? `${props.id}-error` : hint ? `${props.id}-hint` : undefined
+          }
         />
         {showToggle && isPassword && (
           <button
@@ -59,6 +67,15 @@ export function TextField({
           </button>
         )}
       </div>
+      {fieldError ? (
+        <p id={`${props.id}-error`} className="auth-field__hint auth-field__hint--error" role="alert">
+          {fieldError}
+        </p>
+      ) : hint ? (
+        <p id={`${props.id}-hint`} className="auth-field__hint">
+          {hint}
+        </p>
+      ) : null}
     </div>
   )
 }

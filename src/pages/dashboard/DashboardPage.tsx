@@ -13,10 +13,13 @@ import {
 } from 'recharts'
 import { KpiCard } from '../../components/dashboard/KpiCard'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 import { chartAxisTick, chartGridStroke, chartTooltipStyle } from '../../utils/chartTheme'
 
 export function DashboardPage() {
+  const { notifyApiError } = useNotification()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState<string>('')
@@ -37,10 +40,9 @@ export function DashboardPage() {
         if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
           console.log("Petición de KPIs cancelada (cambio de año rápido)")
         } else {
-          console.error("Error fetching dashboard kpis", err)
+          notifyApiError(err, 'No se pudieron cargar los indicadores del dashboard.')
         }
       } finally {
-        // Solo quitamos el loading si la petición no fue cancelada
         if (!signal.aborted) {
           setLoading(false)
         }
@@ -51,13 +53,12 @@ export function DashboardPage() {
     return () => {
       controller.abort()
     }
-  }, [selectedYear])
+  }, [selectedYear, notifyApiError])
 
   if (loading) {
     return <div style={{ padding: '2rem', color: '#fff' }}>Cargando datos históricos...</div>
   }
 
-  // Mapeos para adaptar datos reales de BD a los gráficos de Recharts
   const kpis = [
     { label: 'Delitos (30D)', value: data?.total_delitos_30d || 0, icon: 'pulse', tone: 'blue' as const },
     { label: 'Zonas Críticas', value: data?.top_zonas?.length || 0, icon: 'pin', tone: 'orange' as const },
@@ -72,9 +73,11 @@ export function DashboardPage() {
   }))
 
   const tendenciaSemanal = (data?.tendencia_7d || []).map((d: any) => ({
-    day: d.date.split('-')[2], // Solo el dia para que quepa en el grafico
+    day: d.date.split('-')[2],
     value: d.count
   }))
+
+  const hasChartData = delitosPorTipo.length > 0 || tendenciaSemanal.length > 0
 
   return (
     <>
@@ -107,43 +110,58 @@ export function DashboardPage() {
           ))}
         </div>
 
-        <div className="dash-grid-2">
-          <div className="dash-card">
-            <h3>Delitos por Tipo ({selectedYear ? `Año ${selectedYear}` : 'Últimos 30 días'})</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={delitosPorTipo} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
-                <XAxis dataKey="name" tick={chartAxisTick} axisLine={false} tickLine={false} />
-                <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
-                <Tooltip {...chartTooltipStyle} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                  {delitosPorTipo.map((entry: any) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        {!hasChartData ? (
+          <EmptyState
+            title="Sin registros para mostrar"
+            message="No hay datos históricos disponibles para el período seleccionado."
+          />
+        ) : (
+          <div className="dash-grid-2">
+            <div className="dash-card">
+              <h3>Delitos por Tipo ({selectedYear ? `Año ${selectedYear}` : 'Últimos 30 días'})</h3>
+              {delitosPorTipo.length === 0 ? (
+                <EmptyState message="No hay distribución por tipo de delito en este período." />
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={delitosPorTipo} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                    <XAxis dataKey="name" tick={chartAxisTick} axisLine={false} tickLine={false} />
+                    <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
+                    <Tooltip {...chartTooltipStyle} />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                      {delitosPorTipo.map((entry: any) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="dash-card">
+              <h3>Tendencia Temporal</h3>
+              {tendenciaSemanal.length === 0 ? (
+                <EmptyState message="No hay tendencia temporal disponible para este período." />
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={tendenciaSemanal} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                    <XAxis dataKey="day" tick={chartAxisTick} axisLine={false} tickLine={false} />
+                    <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
+                    <Tooltip {...chartTooltipStyle} />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#8b5cf6"
+                      strokeWidth={2.5}
+                      dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
-          <div className="dash-card">
-            <h3>Tendencia Temporal</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={tendenciaSemanal} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
-                <XAxis dataKey="day" tick={chartAxisTick} axisLine={false} tickLine={false} />
-                <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
-                <Tooltip {...chartTooltipStyle} />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#8b5cf6"
-                  strokeWidth={2.5}
-                  dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        )}
 
         <div className="dash-grid-2">
           <div className="dash-card" data-testid="dashboard-critical-zones">
@@ -158,7 +176,7 @@ export function DashboardPage() {
               </div>
             ))}
             {(!data?.top_zonas || data.top_zonas.length === 0) && (
-              <p style={{ color: '#aaa', marginTop: '1rem' }}>No hay registros de delitos recientes.</p>
+              <EmptyState message="No hay zonas críticas registradas en el período seleccionado." />
             )}
           </div>
           <div className="dash-ai-banner">

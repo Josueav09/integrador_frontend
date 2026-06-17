@@ -6,24 +6,35 @@ import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { apiClient } from '../../api/client'
 import { getApiErrorMessage } from '../../utils/apiError'
+import { getEmailError, getNameError, getPasswordError } from '../../utils/formValidation'
 
 export function RegisterPage() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [nameError, setNameError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const isValid =
-    name.trim().length > 0 &&
-    email.trim().length > 0 &&
-    email.includes('@') &&
-    password.trim().length >= 6
+    !getNameError(name) &&
+    !getEmailError(email) &&
+    !getPasswordError(password)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!isValid || loading) return
+    if (loading) return
+
+    const nextNameError = getNameError(name)
+    const nextEmailError = getEmailError(email)
+    const nextPasswordError = getPasswordError(password)
+    setNameError(nextNameError)
+    setEmailError(nextEmailError)
+    setPasswordError(nextPasswordError)
+    if (nextNameError || nextEmailError || nextPasswordError) return
 
     setError(null)
     setLoading(true)
@@ -49,7 +60,7 @@ export function RegisterPage() {
 
   return (
     <AuthLayout variant="register">
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>Regístrate</h1>
         <GoogleButton onClick={handleGoogleRegister} />
         <p className="auth-divider">o regístrate con tu email</p>
@@ -66,8 +77,13 @@ export function RegisterPage() {
           type="text"
           placeholder="Tu nombre"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value)
+            if (nameError) setNameError(getNameError(e.target.value))
+          }}
+          onBlur={() => setNameError(getNameError(name))}
           autoComplete="name"
+          fieldError={nameError}
           data-testid="register-name-input"
         />
         <TextField
@@ -76,8 +92,14 @@ export function RegisterPage() {
           type="email"
           placeholder="ejemplo@gmail.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (emailError) setEmailError(getEmailError(e.target.value))
+          }}
+          onBlur={() => setEmailError(getEmailError(email))}
           autoComplete="email"
+          hint="Debe ser un correo válido con formato usuario@dominio.com"
+          fieldError={emailError}
           data-testid="register-email-input"
         />
         <TextField
@@ -87,8 +109,14 @@ export function RegisterPage() {
           placeholder="••••••••"
           showToggle
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value)
+            if (passwordError) setPasswordError(getPasswordError(e.target.value))
+          }}
+          onBlur={() => setPasswordError(getPasswordError(password))}
           autoComplete="new-password"
+          hint="Mínimo 6 caracteres."
+          fieldError={passwordError}
           data-testid="register-password-input"
         />
         <PrimaryButton disabled={!isValid || loading} data-testid="register-submit-button">
