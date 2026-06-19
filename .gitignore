@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-coverage
 *.local
 
 # Editor directories and files
@@ -31,3 +30,7 @@ docker-compose.override.yml
 /data/
 # Logs generados dentro de los contenedores
 .containers_logs/
+
+# Vitest coverage reports
+coverage/
+dist/

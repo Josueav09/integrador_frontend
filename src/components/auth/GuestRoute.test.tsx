@@ -1,44 +1,59 @@
-import React from 'react'
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { GuestRoute } from './GuestRoute'
+import React from 'react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { GuestRoute } from './GuestRoute';
+import { useAuth } from '../../contexts/AuthContext';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import '@testing-library/jest-dom';
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: vi.fn(),
-}))
+}));
 
-import { useAuth } from '../../contexts/AuthContext'
+describe('GuestRoute Component', () => {
+  it('debe redirigir a /dashboard si el usuario está autenticado', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      isAuthenticated: true,
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { name: 'Josue', email: 'admin@pnp.gob.pe' },
+    });
 
-function renderGuestRoute(isAuthenticated: boolean) {
-  vi.mocked(useAuth).mockReturnValue({
-    user: isAuthenticated ? { email: 'a@pnp.gob.pe', name: 'Admin' } : null,
-    isAuthenticated,
-    rolId: isAuthenticated ? 1 : null,
-    login: vi.fn(),
-    logout: vi.fn(),
-  })
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route element={<GuestRoute />}>
+            <Route path="/login" element={<div>Página de Login</div>} />
+          </Route>
+          <Route path="/dashboard" element={<div>Panel Dashboard</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
 
-  return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <Routes>
-        <Route element={<GuestRoute />}>
-          <Route path="/login" element={<div>Formulario login</div>} />
-        </Route>
-        <Route path="/dashboard" element={<div>Dashboard</div>} />
-      </Routes>
-    </MemoryRouter>,
-  )
-}
+    expect(screen.getByText('Panel Dashboard')).toBeInTheDocument();
+    expect(screen.queryByText('Página de Login')).toBeNull();
+  });
 
-describe('GuestRoute', () => {
-  it('muestra login para usuarios no autenticados', () => {
-    renderGuestRoute(false)
-    expect(screen.getByText('Formulario login')).toBeInTheDocument()
-  })
+  it('debe renderizar el contenido público si el usuario NO está autenticado', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      isAuthenticated: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    });
 
-  it('redirige al dashboard si ya hay sesión', () => {
-    renderGuestRoute(true)
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-  })
-})
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route element={<GuestRoute />}>
+            <Route path="/login" element={<div>Página de Login</div>} />
+          </Route>
+          <Route path="/dashboard" element={<div>Panel Dashboard</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Página de Login')).toBeInTheDocument();
+    expect(screen.queryByText('Panel Dashboard')).toBeNull();
+  });
+});

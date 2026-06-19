@@ -67,40 +67,40 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/reportar-denuncia" replace />} />
-            
-            {/* Ruta ciudadana pública */}
-            <Route path="/reportar-denuncia" element={<ReportCrimePage />} />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/reportar-denuncia" replace />} />
+              
+              {/* Ruta ciudadana pública */}
+              <Route path="/reportar-denuncia" element={<ReportCrimePage />} />
 
-            <Route element={<GuestRoute />}>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/register/success" element={<RegisterSuccessPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordEmailPage />} />
-              <Route path="/forgot-password/code" element={<ForgotPasswordCodePage />} />
-              <Route path="/forgot-password/new" element={<ForgotPasswordNewPage />} />
-              <Route path="/forgot-password/success" element={<ForgotPasswordSuccessPage />} />
-            </Route>
-
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<DashboardPage />} />
-                <Route path="mapa" element={<CrimeMapPage />} />
-                <Route path="predicciones" element={<PredictionsPage />} />
-                <Route path="analisis" element={<AnalysisPage />} />
-                <Route path="red-gnn" element={<GnnNetworkPage />} />
-                <Route path="metricas" element={<ModelMetricsPage />} />
-                <Route path="monitor" element={<MonitorPage />} />
-                <Route path="administracion" element={<AdminPage />} />
-                <Route path="denuncias" element={<InboxPage />} />
+              <Route element={<GuestRoute />}>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/register/success" element={<RegisterSuccessPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordEmailPage />} />
+                <Route path="/forgot-password/code" element={<ForgotPasswordCodePage />} />
+                <Route path="/forgot-password/new" element={<ForgotPasswordNewPage />} />
+                <Route path="/forgot-password/success" element={<ForgotPasswordSuccessPage />} />
               </Route>
-            </Route>
 
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Suspense>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<DashboardPage />} />
+                  <Route path="mapa" element={<CrimeMapPage />} />
+                  <Route path="predicciones" element={<PredictionsPage />} />
+                  <Route path="analisis" element={<AnalysisPage />} />
+                  <Route path="red-gnn" element={<GnnNetworkPage />} />
+                  <Route path="metricas" element={<ModelMetricsPage />} />
+                  <Route path="monitor" element={<MonitorPage />} />
+                  <Route path="administracion" element={<AdminPage />} />
+                  <Route path="denuncias" element={<InboxPage />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </NotificationProvider>
     </AuthProvider>
