@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import { GuestRoute } from './components/auth/GuestRoute'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { PageLoader } from './components/ui/PageLoader'
@@ -64,42 +65,44 @@ const InboxPage = lazy(() =>
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/reportar-denuncia" replace />} />
-            
-            {/* Ruta ciudadana pública */}
-            <Route path="/reportar-denuncia" element={<ReportCrimePage />} />
+      <NotificationProvider>
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/reportar-denuncia" replace />} />
+              
+              {/* Ruta ciudadana pública */}
+              <Route path="/reportar-denuncia" element={<ReportCrimePage />} />
 
-            <Route element={<GuestRoute />}>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/register/success" element={<RegisterSuccessPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordEmailPage />} />
-              <Route path="/forgot-password/code" element={<ForgotPasswordCodePage />} />
-              <Route path="/forgot-password/new" element={<ForgotPasswordNewPage />} />
-              <Route path="/forgot-password/success" element={<ForgotPasswordSuccessPage />} />
-            </Route>
-
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<DashboardPage />} />
-                <Route path="mapa" element={<CrimeMapPage />} />
-                <Route path="predicciones" element={<PredictionsPage />} />
-                <Route path="analisis" element={<AnalysisPage />} />
-                <Route path="red-gnn" element={<GnnNetworkPage />} />
-                <Route path="metricas" element={<ModelMetricsPage />} />
-                <Route path="monitor" element={<MonitorPage />} />
-                <Route path="administracion" element={<AdminPage />} />
-                <Route path="denuncias" element={<InboxPage />} />
+              <Route element={<GuestRoute />}>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/register/success" element={<RegisterSuccessPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordEmailPage />} />
+                <Route path="/forgot-password/code" element={<ForgotPasswordCodePage />} />
+                <Route path="/forgot-password/new" element={<ForgotPasswordNewPage />} />
+                <Route path="/forgot-password/success" element={<ForgotPasswordSuccessPage />} />
               </Route>
-            </Route>
 
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<DashboardPage />} />
+                  <Route path="mapa" element={<CrimeMapPage />} />
+                  <Route path="predicciones" element={<PredictionsPage />} />
+                  <Route path="analisis" element={<AnalysisPage />} />
+                  <Route path="red-gnn" element={<GnnNetworkPage />} />
+                  <Route path="metricas" element={<ModelMetricsPage />} />
+                  <Route path="monitor" element={<MonitorPage />} />
+                  <Route path="administracion" element={<AdminPage />} />
+                  <Route path="denuncias" element={<InboxPage />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </NotificationProvider>
     </AuthProvider>
   )
 }

@@ -5,6 +5,8 @@ type TextFieldProps = {
   label: string
   link?: { href: string; text: string }
   showToggle?: boolean
+  hint?: string
+  fieldError?: string | null
 } & InputHTMLAttributes<HTMLInputElement>
 
 export function TextField({
@@ -13,11 +15,20 @@ export function TextField({
   showToggle,
   type = 'text',
   className,
+  hint,
+  fieldError,
   ...props
 }: TextFieldProps) {
   const [visible, setVisible] = useState(false)
   const isPassword = type === 'password'
   const inputType = isPassword && showToggle && visible ? 'text' : type
+
+  const errorId = props.id ? `${props.id}-error` : undefined;
+  const hintId = props.id ? `${props.id}-hint` : undefined;
+
+  let describedBy = '';
+  if (fieldError) describedBy = errorId || '';
+  else if (hint) describedBy = hintId || '';
 
   return (
     <div className="auth-field">
@@ -33,7 +44,9 @@ export function TextField({
         <input
           {...props}
           type={inputType}
-          className={`${showToggle && isPassword ? 'has-toggle' : ''} ${className ?? ''}`}
+          className={`${showToggle && isPassword ? 'has-toggle' : ''} ${fieldError ? 'input--error' : ''} ${className ?? ''}`}
+          aria-invalid={!!fieldError}
+          aria-describedby={describedBy || undefined}
         />
         {showToggle && isPassword && (
           <button
@@ -59,6 +72,16 @@ export function TextField({
           </button>
         )}
       </div>
+      {fieldError && (
+        <span id={errorId} className="auth-field__error" role="alert" style={{ color: 'var(--red, #ef4444)', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+          {fieldError}
+        </span>
+      )}
+      {hint && !fieldError && (
+        <span id={hintId} className="auth-field__hint" style={{ color: 'var(--gray, #6b7280)', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+          {hint}
+        </span>
+      )}
     </div>
   )
 }

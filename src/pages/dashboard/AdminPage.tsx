@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
 import { apiClient } from '../../api/client'
+import { useNotification } from '../../contexts/NotificationContext'
+import { validateUploadFile, validateCsvHeaders } from '../../utils/uploadValidation'
 
 export function AdminPage() {
+  const { notifySuccess, notifyError, notifyApiError } = useNotification()
+
   const [pipeline, setPipeline] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
   const [logs, setLogs] = useState<string[]>([])
@@ -79,23 +83,20 @@ export function AdminPage() {
       if (res.data?.success) {
         setIsRunning(true)
         setLogs(prev => [...prev, "[REACT] Solicitud de reentrenamiento enviada..."])
+        notifySuccess("Reentrenamiento de GNN iniciado correctamente.")
       } else {
-        alert(res.data?.message || "No se pudo iniciar el reentrenamiento.")
+        notifyError(res.data?.message || "No se pudo iniciar el reentrenamiento.")
       }
     } catch (err: any) {
       if (err.response?.status === 403) {
-        alert("Acceso Denegado: Requiere rol Administrador o Investigador.")
+        notifyError("Acceso Denegado: Requiere rol Administrador o Investigador.")
       } else {
-        alert("Error al iniciar el reentrenamiento.")
+        notifyApiError(err, "Error al iniciar el reentrenamiento.")
       }
     }
   }
 
-  // Carga de archivos CSV
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const uploadFileToServer = async (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
 
@@ -107,17 +108,58 @@ export function AdminPage() {
         }
       })
       if (res.data?.success) {
-        setUploadStatus(`Éxito: cargado "${res.data.filename}" con ${res.data.registros} registros.`)
+        const successMsg = `Éxito: cargado "${res.data.filename}" con ${res.data.registros} registros.`
+        setUploadStatus(successMsg)
+        notifySuccess(successMsg)
         loadData()
       } else {
-        setUploadStatus("Error al cargar.")
+        const errMsg = "Error al cargar el archivo en el servidor."
+        setUploadStatus(errMsg)
+        notifyError(errMsg)
       }
     } catch (err: any) {
       if (err.response?.status === 403) {
-        setUploadStatus("Error: Rol no autorizado (Requiere Administrador/Investigador).")
+        const rbacMsg = "Error: Rol no autorizado (Requiere Administrador/Investigador)."
+        setUploadStatus(rbacMsg)
+        notifyError(rbacMsg)
       } else {
-        setUploadStatus("Error al procesar el archivo.")
+        const procMsg = "Error al procesar el archivo en el backend."
+        setUploadStatus(procMsg)
+        notifyApiError(err, procMsg)
       }
+    }
+  }
+
+  // Carga de archivos CSV
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validación local del archivo antes del envío (APF3)
+    const validation = validateUploadFile(file)
+    if (!validation.isValid) {
+      notifyError(validation.error || "Archivo no válido")
+      setUploadStatus(validation.error)
+      return
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase()
+    if (extension === 'csv') {
+      const reader = new FileReader()
+      reader.onload = async (event) => {
+        const text = event.target?.result as string
+        const firstLine = text.split('\n')[0] || ''
+        const headerValidation = validateCsvHeaders(firstLine)
+        if (!headerValidation.isValid) {
+          notifyError(headerValidation.error || "Cabeceras de CSV incorrectas")
+          setUploadStatus(headerValidation.error)
+          return
+        }
+        await uploadFileToServer(file)
+      }
+      reader.readAsText(file.slice(0, 1024))
+    } else {
+      await uploadFileToServer(file)
     }
   }
 
@@ -155,6 +197,7 @@ export function AdminPage() {
                     onChange={handleFileUpload} 
                     style={{ display: 'none' }} 
                     accept=".csv,.json"
+                    data-testid="admin-file-input"
                   />
                   <div 
                     className="dash-upload-zone" 
