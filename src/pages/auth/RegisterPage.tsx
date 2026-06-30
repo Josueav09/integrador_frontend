@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../../components/auth/AuthLayout'
-import { GoogleButton } from '../../components/auth/GoogleButton'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { apiClient } from '../../api/client'
@@ -54,16 +53,10 @@ export function RegisterPage() {
     }
   }
 
-  const handleGoogleRegister = () => {
-    setError('El registro con Google está deshabilitado temporalmente.')
-  }
-
   return (
     <AuthLayout variant="register">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>Regístrate</h1>
-        <GoogleButton onClick={handleGoogleRegister} />
-        <p className="auth-divider">o regístrate con tu email</p>
 
         {error && (
           <div className="auth-error-banner" role="alert">

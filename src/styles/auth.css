@@ -156,46 +156,6 @@ body {
   font-weight: 500;
 }
 
-.auth-google {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.625rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--auth-border);
-  border-radius: 10px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--auth-text);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.auth-google:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1.25rem 0;
-  font-size: 0.8125rem;
-  color: var(--auth-muted);
-}
-
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--auth-border);
-}
-
 .auth-field {
   margin-bottom: 1rem;
 }

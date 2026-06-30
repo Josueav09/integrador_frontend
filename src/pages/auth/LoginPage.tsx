@@ -2,7 +2,6 @@ import { useState, type FormEvent, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { AuthLayout } from '../../components/auth/AuthLayout'
-import { GoogleButton } from '../../components/auth/GoogleButton'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { getEmailError, getLoginPasswordError } from '../../utils/formValidation'
@@ -61,16 +60,10 @@ export function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = () => {
-    setError('El inicio de sesión con Google está deshabilitado temporalmente.')
-  }
-
   return (
     <AuthLayout variant="login">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>{t('auth.welcome')}</h1>
-        <GoogleButton onClick={handleGoogleLogin} />
-        <p className="auth-divider">{t('auth.orEmail')}</p>
 
         {info && <div className="auth-info-banner" role="status">{info}</div>}
         {error && <div className="auth-error-banner" role="alert">{error}</div>}
