@@ -6,12 +6,16 @@ import { GoogleButton } from '../../components/auth/GoogleButton'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { getEmailError, getLoginPasswordError } from '../../utils/formValidation'
+import { useNotification } from '../../contexts/NotificationContext'
+import { useTranslation } from '../../contexts/PreferencesContext'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const { login } = useAuth()
+  const { notifySuccess } = useNotification()
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -25,9 +29,9 @@ export function LoginPage() {
     if (state?.email) setEmail(state.email)
     if (state?.message) setInfo(state.message)
     if (searchParams.get('session') === 'expired') {
-      setInfo('Tu sesión expiró. Inicia sesión nuevamente.')
+      setInfo(t('auth.sessionExpired'))
     }
-  }, [location.state, searchParams])
+  }, [location.state, searchParams, t])
 
   const isValid =
     !getEmailError(email) &&
@@ -48,6 +52,7 @@ export function LoginPage() {
     setLoading(true)
     try {
       await login(email, password)
+      notifySuccess('Sesión iniciada con éxito')
       navigate('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Credenciales incorrectas')
@@ -63,16 +68,16 @@ export function LoginPage() {
   return (
     <AuthLayout variant="login">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <h1>¡Bienvenido de nuevo!</h1>
+        <h1>{t('auth.welcome')}</h1>
         <GoogleButton onClick={handleGoogleLogin} />
-        <p className="auth-divider">o ingresa con tu email</p>
+        <p className="auth-divider">{t('auth.orEmail')}</p>
 
         {info && <div className="auth-info-banner" role="status">{info}</div>}
         {error && <div className="auth-error-banner" role="alert">{error}</div>}
 
         <TextField
           id="login-email"
-          label="Correo electrónico"
+          label={t('auth.email')}
           type="email"
           placeholder="ejemplo@gmail.com"
           value={email}
@@ -82,17 +87,18 @@ export function LoginPage() {
           }}
           onBlur={() => setEmailError(getEmailError(email))}
           autoComplete="email"
-          hint="Usa tu correo institucional registrado en el sistema."
+          hint={t('auth.emailHint')}
           fieldError={emailError}
+          errorTestId="login-email-error"
           data-testid="login-email-input"
         />
         <TextField
           id="login-password"
-          label="Contraseña"
+          label={t('auth.password')}
           type="password"
           placeholder="••••••••"
           showToggle
-          link={{ href: '/forgot-password', text: '¿Olvidaste?' }}
+          link={{ href: '/forgot-password', text: t('auth.forgot') }}
           value={password}
           onChange={(e) => {
             setPassword(e.target.value)
@@ -104,10 +110,10 @@ export function LoginPage() {
           data-testid="login-password-input"
         />
         <PrimaryButton disabled={!isValid || loading} data-testid="login-submit-button">
-          {loading ? 'Iniciando...' : 'Iniciar sesión'}
+          {loading ? t('auth.loggingIn') : t('auth.login')}
         </PrimaryButton>
         <p className="auth-footer">
-          ¿No tienes una cuenta? <Link to="/register">Regístrate</Link>
+          {t('auth.noAccount')} <Link to="/register">{t('auth.register')}</Link>
         </p>
       </form>
     </AuthLayout>

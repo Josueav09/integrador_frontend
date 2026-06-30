@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { apiClient } from '../../api/client'
 import { getApiErrorMessage } from '../../utils/apiError'
+import { AccessibilityTrigger } from '../../components/accessibility/AccessibilityTrigger'
 
 // Fix default icon issue with Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -75,13 +76,16 @@ export function ReportCrimePage() {
             <h1 style={{ margin: 0, color: '#3b82f6' }}>Plataforma de Denuncia Ciudadana Anónima</h1>
             <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Su reporte ayuda a la Policía Nacional del Perú a identificar nuevos puntos críticos y optimizar el patrullaje inteligente (GNN).</p>
           </div>
-          <button 
-            type="button" 
-            onClick={() => navigate('/login')}
-            style={{ padding: '0.5rem 1rem', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            🔒 Acceso PNP
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <AccessibilityTrigger variant="dark" />
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              style={{ padding: '0.5rem 1rem', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              🔒 Acceso PNP
+            </button>
+          </div>
         </div>
 
         {mensaje && (

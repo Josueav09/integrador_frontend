@@ -15,11 +15,14 @@ import { KpiCard } from '../../components/dashboard/KpiCard'
 import { PageHeader } from '../../components/dashboard/PageHeader'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useNotification } from '../../contexts/NotificationContext'
+import { useTranslation } from '../../contexts/PreferencesContext'
 import { apiClient } from '../../api/client'
-import { chartAxisTick, chartGridStroke, chartTooltipStyle } from '../../utils/chartTheme'
+import { useChartTheme } from '../../utils/chartTheme'
 
 export function DashboardPage() {
   const { notifyApiError } = useNotification()
+  const { t } = useTranslation()
+  const chart = useChartTheme()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [selectedYear, setSelectedYear] = useState<string>('')
@@ -65,7 +68,7 @@ export function DashboardPage() {
     { label: 'Riesgo Global', value: data?.nivel_riesgo_global || 'Bajo', icon: 'warning', tone: 'red' as const },
   ]
 
-  const chartColors = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981']
+  const chartColors = chart.chartColors
   const delitosPorTipo = (data?.distribucion_tipos || []).map((d: any, index: number) => ({
     name: d.type,
     value: d.count,
@@ -82,8 +85,8 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Dashboard Analítico"
-        subtitle="Monitoreo en tiempo real del sistema de pronóstico"
+        title={t('page.dashboard.title')}
+        subtitle={t('page.dashboard.subtitle')}
       >
         <select 
           className="dash-select" 
@@ -124,10 +127,10 @@ export function DashboardPage() {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={delitosPorTipo} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
-                    <XAxis dataKey="name" tick={chartAxisTick} axisLine={false} tickLine={false} />
-                    <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
-                    <Tooltip {...chartTooltipStyle} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chart.chartGridStroke} vertical={false} />
+                    <XAxis dataKey="name" tick={chart.chartAxisTick} axisLine={false} tickLine={false} />
+                    <YAxis tick={chart.chartAxisTick} axisLine={false} tickLine={false} />
+                    <Tooltip {...chart.chartTooltipStyle} />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                       {delitosPorTipo.map((entry: any) => (
                         <Cell key={entry.name} fill={entry.color} />
@@ -144,16 +147,16 @@ export function DashboardPage() {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={tendenciaSemanal} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
-                    <XAxis dataKey="day" tick={chartAxisTick} axisLine={false} tickLine={false} />
-                    <YAxis tick={chartAxisTick} axisLine={false} tickLine={false} />
-                    <Tooltip {...chartTooltipStyle} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chart.chartGridStroke} vertical={false} />
+                    <XAxis dataKey="day" tick={chart.chartAxisTick} axisLine={false} tickLine={false} />
+                    <YAxis tick={chart.chartAxisTick} axisLine={false} tickLine={false} />
+                    <Tooltip {...chart.chartTooltipStyle} />
                     <Line
                       type="monotone"
                       dataKey="value"
-                      stroke="#8b5cf6"
+                      stroke={chart.lineStroke}
                       strokeWidth={2.5}
-                      dot={{ r: 4, fill: '#8b5cf6', strokeWidth: 0 }}
+                      dot={{ r: 4, fill: chart.dotFill, strokeWidth: 0 }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>

@@ -2,6 +2,7 @@ import React from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { PreferencesProvider } from '../../contexts/PreferencesContext'
 import { LoginPage } from './LoginPage'
 
 const mockLogin = vi.fn()
@@ -9,6 +10,10 @@ const mockNavigate = vi.fn()
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ login: mockLogin }),
+}))
+
+vi.mock('../../contexts/NotificationContext', () => ({
+  useNotification: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn(), notifyApiError: vi.fn() }),
 }))
 
 vi.mock('react-router-dom', async () => {
@@ -21,9 +26,11 @@ vi.mock('react-router-dom', async () => {
 
 function renderLogin(route = '/login') {
   return render(
-    <MemoryRouter initialEntries={[route]}>
-      <LoginPage />
-    </MemoryRouter>,
+    <PreferencesProvider>
+      <MemoryRouter initialEntries={[route]}>
+        <LoginPage />
+      </MemoryRouter>
+    </PreferencesProvider>,
   )
 }
 

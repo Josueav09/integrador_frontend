@@ -7,6 +7,7 @@ type TextFieldProps = {
   showToggle?: boolean
   hint?: string
   fieldError?: string | null
+  errorTestId?: string
 } & InputHTMLAttributes<HTMLInputElement>
 
 export function TextField({
@@ -15,6 +16,7 @@ export function TextField({
   showToggle,
   hint,
   fieldError,
+  errorTestId,
   type = 'text',
   className,
   ...props
@@ -68,7 +70,12 @@ export function TextField({
         )}
       </div>
       {fieldError ? (
-        <p id={`${props.id}-error`} className="auth-field__hint auth-field__hint--error" role="alert">
+        <p
+          id={`${props.id}-error`}
+          className="auth-field__hint auth-field__hint--error"
+          role="alert"
+          data-testid={errorTestId}
+        >
           {fieldError}
         </p>
       ) : hint ? (

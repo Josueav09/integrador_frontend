@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { RegisterPage } from './RegisterPage'
+import { PreferencesProvider } from '../../contexts/PreferencesContext'
 import { apiClient } from '../../api/client'
 
 const mockNavigate = vi.fn()
@@ -23,9 +24,11 @@ vi.mock('react-router-dom', async () => {
 
 function renderRegister() {
   return render(
-    <MemoryRouter>
-      <RegisterPage />
-    </MemoryRouter>,
+    <PreferencesProvider>
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>
+    </PreferencesProvider>,
   )
 }
 

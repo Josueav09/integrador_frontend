@@ -7,7 +7,7 @@ export function isValidEmail(email: string): boolean {
 export function getEmailError(email: string): string | null {
   const value = email.trim()
   if (!value) return 'El correo electrónico es obligatorio.'
-  if (!isValidEmail(value)) return 'Ingresa un correo electrónico válido (ej: usuario@pnp.gob.pe).'
+  if (!isValidEmail(value)) return 'El formato del correo institucional es incorrecto.'
   return null
 }
 

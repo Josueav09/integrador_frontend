@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { PreferencesProvider } from './contexts/PreferencesContext'
+import { AccessibilityPanel } from './components/accessibility/AccessibilityPanel'
 import { GuestRoute } from './components/auth/GuestRoute'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { PageLoader } from './components/ui/PageLoader'
@@ -65,9 +67,11 @@ const InboxPage = lazy(() =>
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
+      <PreferencesProvider>
+        <NotificationProvider>
+          <BrowserRouter>
+            <div id="app-scale" className="app-scale">
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Navigate to="/reportar-denuncia" replace />} />
               
@@ -101,8 +105,11 @@ function App() {
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </Suspense>
+            </div>
+            <AccessibilityPanel />
         </BrowserRouter>
       </NotificationProvider>
+      </PreferencesProvider>
     </AuthProvider>
   )
 }

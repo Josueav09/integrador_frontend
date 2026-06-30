@@ -203,7 +203,31 @@ Pruebas manuales recomendadas (capturas para informe APF3):
   - Informe ISO 25010 (Word)
   - Deploy cloud v2 + capturas
   - PPT sustentación
-  - Playwright/Selenium E2E (data-testid ya preparados)
+  - Suite Selenium del equipo (STGNNTestSuite) — contrato en ../CONTRATO_PRUEBAS_E2E.txt
   - Lighthouse (accesibilidad/performance)
+
+
+--------------------------------------------------------------------------------
+10. COMPATIBILIDAD SELENIUM SIN ROMPER E2E DEL EQUIPO (Jun 2026)
+--------------------------------------------------------------------------------
+
+Contrato: ../CONTRATO_PRUEBAS_E2E.txt
+
+CAMBIOS ALINEADOS AL INFORME SELENIUM (test_02_login_flow):
+  - Mensaje email inválido: "El formato del correo institucional es incorrecto."
+  - Toast éxito login: "Sesión iniciada con éxito" (NotificationContext)
+  - data-testid login-email-error en TextField
+  - Script npm run dev:selenium  -> puerto 3000 para Chrome WebDriver
+
+ARCHIVOS TOCADOS:
+  src/utils/formValidation.ts
+  src/pages/auth/LoginPage.tsx
+  src/components/auth/TextField.tsx
+  src/pages/auth/LoginPage.test.tsx (mock NotificationContext)
+  package.json (dev:selenium)
+
+NO SE MODIFICARON:
+  - Ningún data-testid listado en el contrato
+  - Rutas /login, /dashboard, /reportar-denuncia, etc.
 
 ================================================================================
