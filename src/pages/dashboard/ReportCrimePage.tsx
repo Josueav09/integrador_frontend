@@ -6,8 +6,9 @@ import L from 'leaflet'
 import { apiClient } from '../../api/client'
 import { getApiErrorMessage } from '../../utils/apiError'
 import { AccessibilityTrigger } from '../../components/accessibility/AccessibilityTrigger'
+import { StatusBanner } from '../../components/ui/StatusBanner'
+import { useNotification } from '../../contexts/NotificationContext'
 
-// Fix default icon issue with Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -15,7 +16,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 })
 
-// Componente para capturar clics en el mapa
 function MapClickHandler({ setPosition }: { setPosition: (pos: [number, number]) => void }) {
   useMapEvents({
     click(e) {
@@ -25,10 +25,14 @@ function MapClickHandler({ setPosition }: { setPosition: (pos: [number, number])
   return null
 }
 
+const SUCCESS_MESSAGE =
+  'Su denuncia ha sido registrada de manera anónima y está pendiente de revisión por la PNP.'
+
 export function ReportCrimePage() {
   const navigate = useNavigate()
+  const { notifySuccess } = useNotification()
   const [position, setPosition] = useState<[number, number] | null>(null)
-  const [tipoDelito, setTipoDelito] = useState('1') // 1: Robo, 2: Hurto
+  const [tipoDelito, setTipoDelito] = useState('1')
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [hora, setHora] = useState('12:00')
   const [descripcion, setDescripcion] = useState('')
@@ -44,7 +48,7 @@ export function ReportCrimePage() {
 
     setLoading(true)
     setMensaje(null)
-    
+
     try {
       const payload = {
         id_tipo_delito: parseInt(tipoDelito),
@@ -52,15 +56,15 @@ export function ReportCrimePage() {
         hora_delito: hora.length === 5 ? `${hora}:00` : hora,
         latitud: position[0],
         longitud: position[1],
-        descripcion: descripcion
+        descripcion: descripcion,
       }
 
       await apiClient.post('/denuncias/publica', payload)
-      
-      setMensaje({ tipo: 'success', texto: 'Su denuncia ha sido registrada de manera anónima y está pendiente de revisión por la PNP.' })
+
+      setMensaje({ tipo: 'success', texto: SUCCESS_MESSAGE })
+      notifySuccess('Denuncia registrada correctamente')
       setDescripcion('')
       setPosition(null)
-      
     } catch (err: unknown) {
       setMensaje({ tipo: 'error', texto: getApiErrorMessage(err, 'Error al registrar denuncia.') })
     } finally {
@@ -69,47 +73,41 @@ export function ReportCrimePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', padding: '2rem' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', background: '#111', padding: '2rem', borderRadius: '12px', border: '1px solid #333' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+    <div className="report-crime-page">
+      <div className="report-crime-page__inner">
+        <div className="report-crime-page__header">
           <div>
-            <h1 style={{ margin: 0, color: '#3b82f6' }}>Plataforma de Denuncia Ciudadana Anónima</h1>
-            <p style={{ color: '#aaa', marginTop: '0.5rem' }}>Su reporte ayuda a la Policía Nacional del Perú a identificar nuevos puntos críticos y optimizar el patrullaje inteligente (GNN).</p>
+            <h1 className="report-crime-page__title">Plataforma de Denuncia Ciudadana Anónima</h1>
+            <p className="report-crime-page__intro">
+              Su reporte ayuda a la Policía Nacional del Perú a identificar nuevos puntos críticos y optimizar el
+              patrullaje inteligente (GNN).
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+          <div className="report-crime-page__actions">
             <AccessibilityTrigger variant="dark" />
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              style={{ padding: '0.5rem 1rem', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              🔒 Acceso PNP
+            <button type="button" className="report-crime-page__login-btn" onClick={() => navigate('/login')}>
+              Acceso PNP
             </button>
           </div>
         </div>
 
         {mensaje && (
-          <div style={{ 
-            padding: '1rem', 
-            marginBottom: '1rem', 
-            borderRadius: '8px', 
-            background: mensaje.tipo === 'success' ? '#064e3b' : '#7f1d1d',
-            border: `1px solid ${mensaje.tipo === 'success' ? '#10b981' : '#ef4444'}`
-          }}>
-            {mensaje.texto}
+          <div data-testid={mensaje.tipo === 'success' ? 'report-crime-success-message' : undefined}>
+            <StatusBanner type={mensaje.tipo} message={mensaje.texto} onDismiss={() => setMensaje(null)} />
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-          
-          {/* Columna Izquierda: Formulario */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form className="report-crime-page__form" onSubmit={handleSubmit}>
+          <div className="report-crime-page__fields">
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Tipo de Incidente</label>
-              <select 
-                value={tipoDelito} 
+              <label className="report-crime-page__label" htmlFor="report-tipo">
+                Tipo de Incidente
+              </label>
+              <select
+                id="report-tipo"
+                className="report-crime-page__select"
+                value={tipoDelito}
                 onChange={(e) => setTipoDelito(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff' }}
                 data-testid="report-crime-type-select"
               >
                 <option value="1">Robo agravado (Con violencia/arma)</option>
@@ -117,77 +115,71 @@ export function ReportCrimePage() {
               </select>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Fecha</label>
-                <input 
-                  type="date" 
-                  value={fecha} 
+            <div className="report-crime-page__row">
+              <div>
+                <label className="report-crime-page__label" htmlFor="report-fecha">
+                  Fecha
+                </label>
+                <input
+                  id="report-fecha"
+                  type="date"
+                  className="report-crime-page__input"
+                  value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
                   required
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff' }}
                   data-testid="report-crime-date-input"
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Hora (Aprox)</label>
-                <input 
-                  type="time" 
-                  value={hora} 
+              <div>
+                <label className="report-crime-page__label" htmlFor="report-hora">
+                  Hora (aprox.)
+                </label>
+                <input
+                  id="report-hora"
+                  type="time"
+                  className="report-crime-page__input"
+                  value={hora}
                   onChange={(e) => setHora(e.target.value)}
                   required
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff' }}
                   data-testid="report-crime-time-input"
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Descripción de los hechos</label>
-              <textarea 
-                value={descripcion} 
+              <label className="report-crime-page__label" htmlFor="report-desc">
+                Descripción de los hechos
+              </label>
+              <textarea
+                id="report-desc"
+                className="report-crime-page__textarea"
+                value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 rows={4}
                 required
                 placeholder="Describa brevemente cómo ocurrieron los hechos... (Evite proporcionar datos personales)"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', background: '#222', border: '1px solid #444', color: '#fff', resize: 'vertical' }}
                 data-testid="report-crime-desc-textarea"
               />
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
+              className="report-crime-page__submit"
               disabled={loading || !position}
-              style={{
-                marginTop: 'auto',
-                padding: '1rem',
-                background: (!position || loading) ? '#333' : '#2563eb',
-                color: (!position || loading) ? '#888' : '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: (!position || loading) ? 'not-allowed' : 'pointer',
-                transition: 'background 0.3s'
-              }}
               data-testid="report-crime-submit-btn"
             >
               {loading ? 'Enviando reporte...' : 'Enviar Reporte a la PNP'}
             </button>
           </div>
 
-          {/* Columna Derecha: Mapa Leaflet */}
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Ubicación Exacta (Haga clic en el mapa)</label>
-            <div 
-              style={{ height: '400px', borderRadius: '8px', overflow: 'hidden', border: position ? '2px solid #22c55e' : '2px solid #ef4444' }}
+            <label className="report-crime-page__label">Ubicación exacta</label>
+            <div
+              className={`report-crime-page__map-wrap${position ? ' report-crime-page__map-wrap--ready' : ''}`}
               data-testid="report-crime-map-container"
             >
-              <MapContainer 
-                center={[-12.0464, -77.0428]} 
-                zoom={12} 
-                style={{ height: '100%', width: '100%' }}
-              >
+              <MapContainer center={[-12.0464, -77.0428]} zoom={12} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                   attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -196,9 +188,12 @@ export function ReportCrimePage() {
                 {position && <Marker position={position} />}
               </MapContainer>
             </div>
-            {!position && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem' }}>* La ubicación es obligatoria.</p>}
+            <p className="report-crime-page__map-hint">
+              Haga clic en el mapa para marcar el lugar del incidente. El borde verde confirma que la ubicación está
+              seleccionada.
+            </p>
+            {!position && <p className="report-crime-page__map-error">* La ubicación es obligatoria.</p>}
           </div>
-
         </form>
       </div>
     </div>

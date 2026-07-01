@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../../components/auth/AuthLayout'
+import { AuthStepIndicator } from '../../components/auth/AuthStepIndicator'
 import { OtpInput } from '../../components/auth/OtpInput'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
@@ -56,9 +57,10 @@ export function ForgotPasswordCodePage() {
   return (
     <AuthLayout variant="recover">
       <form className="auth-form" onSubmit={handleSubmit}>
+        <AuthStepIndicator current={2} />
         <h1>Código de verificación</h1>
         <p className="auth-form__subtitle">
-          Te enviamos un código a <strong>{email}</strong>.
+          Ingresa el código enviado a <strong>{email}</strong>. En laboratorio con TEST_MODE, revisa la consola del backend.
         </p>
         {info && <div className="auth-info-banner" role="status">{info}</div>}
         {error && <div className="auth-error-banner" role="alert">{error}</div>}

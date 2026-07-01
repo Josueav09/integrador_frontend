@@ -59,7 +59,12 @@ export function DashboardPage() {
   }, [selectedYear, notifyApiError])
 
   if (loading) {
-    return <div style={{ padding: '2rem', color: '#fff' }}>Cargando datos históricos...</div>
+    return (
+      <div className="dash-loading" role="status" data-testid="page-loader">
+        <div className="page-loader__ring" />
+        <p>Cargando datos históricos...</p>
+      </div>
+    )
   }
 
   const kpis = [
@@ -83,7 +88,7 @@ export function DashboardPage() {
   const hasChartData = delitosPorTipo.length > 0 || tendenciaSemanal.length > 0
 
   return (
-    <>
+    <div data-testid="dashboard-ready">
       <PageHeader
         title={t('page.dashboard.title')}
         subtitle={t('page.dashboard.subtitle')}
@@ -200,6 +205,6 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }

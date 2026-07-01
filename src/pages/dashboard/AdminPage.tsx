@@ -81,6 +81,14 @@ export function AdminPage() {
   }, [isRunning])
 
   const handleRetrain = async () => {
+    if (
+      !window.confirm(
+        '¿Iniciar reentrenamiento del modelo GNN? El proceso puede tardar varios minutos y consumir recursos del servidor.',
+      )
+    ) {
+      return
+    }
+
     setRetraining(true)
     try {
       const res = await apiClient.post('/admin/retrain')
@@ -183,26 +191,19 @@ export function AdminPage() {
           <>
             {loading && (
               <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'rgba(255,255,255,0.4)',
-                  zIndex: 10,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  fontWeight: 'bold',
-                }}
+                className="dash-loading"
+                style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(255,255,255,0.4)' }}
+                data-testid="admin-loading"
+                role="status"
               >
-                Cargando Módulo de Control...
+                <div className="page-loader__ring" />
+                <p>Cargando módulo de control...</p>
               </div>
             )}
 
             <div className="dash-card" style={{ marginBottom: '1rem' }}>
               <h3>Cargar Datos</h3>
+              <p className="dash-upload-hint">Formatos admitidos: CSV o JSON. Valide el esquema antes de subir.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <input

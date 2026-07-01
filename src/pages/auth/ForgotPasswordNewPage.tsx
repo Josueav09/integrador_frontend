@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../../components/auth/AuthLayout'
+import { AuthStepIndicator } from '../../components/auth/AuthStepIndicator'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
@@ -57,6 +58,7 @@ export function ForgotPasswordNewPage() {
   return (
     <AuthLayout variant="recover">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <AuthStepIndicator current={3} />
         <h1>Nueva contraseña</h1>
         <p className="auth-form__subtitle">
           Crea una contraseña segura y única para restablecer el acceso a tu cuenta.

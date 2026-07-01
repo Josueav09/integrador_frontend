@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../../components/auth/AuthLayout'
+import { AuthStepIndicator } from '../../components/auth/AuthStepIndicator'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
 import { BackLink } from '../../components/auth/BackLink'
@@ -40,10 +41,10 @@ export function ForgotPasswordEmailPage() {
   return (
     <AuthLayout variant="recover">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <AuthStepIndicator current={1} />
         <h1>Recuperar contraseña</h1>
         <p className="auth-form__subtitle">
-          Ingresa tu correo electrónico y te enviaremos un código para que puedas
-          restablecerla de manera segura.
+          Ingresa tu correo electrónico. Si la cuenta existe, recibirás un código válido por 15 minutos.
         </p>
         {error && <div className="auth-error-banner" role="alert">{error}</div>}
         <TextField

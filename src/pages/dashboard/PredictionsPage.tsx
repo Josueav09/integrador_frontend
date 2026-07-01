@@ -71,6 +71,12 @@ export function PredictionsPage() {
   const riskByHour = data?.risk_by_hour || []
   const zoneComparison = data?.zone_comparison || []
 
+  const totalReal = predictionVsHistory.reduce((acc: number, row: { real?: number }) => acc + (row.real ?? 0), 0)
+  const totalPred = predictionVsHistory.reduce((acc: number, row: { pred?: number }) => acc + (row.pred ?? 0), 0)
+  const riskLevel =
+    totalPred > totalReal * 1.1 ? 'Alto' : totalPred < totalReal * 0.9 ? 'Moderado' : 'Estable'
+  const hasSummaryData = predictionVsHistory.length > 0
+
   return (
     <>
       <PageHeader
@@ -102,10 +108,18 @@ export function PredictionsPage() {
 
         <div className="dash-alert-card">
           <h3>Distrito Seleccionado: {distrito}</h3>
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>
-            <strong>88%</strong> Confiabilidad del modelo · Probabilidad de incremento delictivo:{' '}
-            <strong>88%</strong> · Nivel de Riesgo: <strong>Alto</strong> · Tendencia:{' '}
-            <strong>Estable</strong>
+          {hasSummaryData ? (
+            <p style={{ margin: 0, fontSize: '0.875rem' }}>
+              Incidentes históricos (7d): <strong>{totalReal}</strong> · Proyección modelo:{' '}
+              <strong>{totalPred}</strong> · Nivel de riesgo estimado: <strong>{riskLevel}</strong>
+            </p>
+          ) : (
+            <p style={{ margin: 0, fontSize: '0.875rem' }}>
+              No hay suficientes datos para este distrito. Seleccione otro o use TODOS.
+            </p>
+          )}
+          <p className="predictions-summary--demo">
+            Indicadores calculados a partir del histórico y la proyección del endpoint /predict/detalles.
           </p>
         </div>
 

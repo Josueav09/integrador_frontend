@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
 import { StatusBanner } from '../../components/ui/StatusBanner'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { apiClient } from '../../api/client'
 import { getApiErrorMessage } from '../../utils/apiError'
 
@@ -46,6 +47,13 @@ export function InboxPage() {
   }, [])
 
   const handleAction = async (id: number, action: 'aprobar' | 'rechazar') => {
+    if (
+      action === 'rechazar' &&
+      !window.confirm(`¿Descartar la denuncia #${id}? Esta acción no se puede deshacer.`)
+    ) {
+      return
+    }
+
     setProcessingId(id)
     setFeedback(null)
     try {
@@ -73,7 +81,13 @@ export function InboxPage() {
       <PageHeader
         title="Bandeja de Entrada - Reportes Ciudadanos"
         subtitle="Módulo de Cuarentena: Valide o descarte incidentes para alimentar el histórico oficial"
-      />
+      >
+        {!loading && denuncias.length > 0 && (
+          <span className="dash-inbox-badge" data-testid="inbox-pending-count">
+            {denuncias.length} pendiente{denuncias.length === 1 ? '' : 's'}
+          </span>
+        )}
+      </PageHeader>
       <div className="dash-content">
         {feedback && (
           <StatusBanner
@@ -98,9 +112,18 @@ export function InboxPage() {
                 {loading ? (
                   <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>Cargando denuncias...</td></tr>
                 ) : denuncias.length === 0 ? (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>No hay reportes ciudadanos pendientes en cuarentena.</td></tr>
+                  <tr>
+                    <td colSpan={5}>
+                      <EmptyState
+                        title="Bandeja vacía"
+                        message="No hay reportes ciudadanos pendientes en cuarentena."
+                        actionLabel="Ver mapa delictivo"
+                        actionHref="/dashboard/mapa"
+                      />
+                    </td>
+                  </tr>
                 ) : (
-                  denuncias.map((d) => (
+                  denuncias.map((d, index) => (
                     <tr key={d.id_denuncia_ciudadana}>
                       <td>#{d.id_denuncia_ciudadana}</td>
                       <td>
@@ -114,24 +137,32 @@ export function InboxPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button 
+                          <button
                             className="dash-btn dash-btn--primary"
                             onClick={() => handleAction(d.id_denuncia_ciudadana, 'aprobar')}
                             disabled={processingId === d.id_denuncia_ciudadana}
                             title="Validar y transferir a la DB oficial"
-                            data-testid="inbox-approve-btn"
+                            data-testid={
+                              index === 0
+                                ? 'inbox-approve-btn'
+                                : `inbox-approve-btn-${d.id_denuncia_ciudadana}`
+                            }
                           >
                             {processingId === d.id_denuncia_ciudadana ? 'Procesando...' : 'Aprobar'}
                           </button>
-                          <button 
+                          <button
                             className="dash-btn dash-btn--danger"
                             onClick={() => handleAction(d.id_denuncia_ciudadana, 'rechazar')}
                             disabled={processingId === d.id_denuncia_ciudadana}
                             style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444' }}
                             title="Descartar reporte falso"
-                            data-testid="inbox-reject-btn"
+                            data-testid={
+                              index === 0
+                                ? 'inbox-reject-btn'
+                                : `inbox-reject-btn-${d.id_denuncia_ciudadana}`
+                            }
                           >
-                            Descartar
+                            {processingId === d.id_denuncia_ciudadana ? 'Procesando...' : 'Descartar'}
                           </button>
                         </div>
                       </td>
