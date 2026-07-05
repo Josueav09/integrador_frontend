@@ -7,28 +7,23 @@ type TextFieldProps = {
   showToggle?: boolean
   hint?: string
   fieldError?: string | null
+  errorTestId?: string
 } & InputHTMLAttributes<HTMLInputElement>
 
 export function TextField({
   label,
   link,
   showToggle,
-  type = 'text',
-  className,
   hint,
   fieldError,
+  errorTestId,
+  type = 'text',
+  className,
   ...props
 }: TextFieldProps) {
   const [visible, setVisible] = useState(false)
   const isPassword = type === 'password'
   const inputType = isPassword && showToggle && visible ? 'text' : type
-
-  const errorId = props.id ? `${props.id}-error` : undefined;
-  const hintId = props.id ? `${props.id}-hint` : undefined;
-
-  let describedBy = '';
-  if (fieldError) describedBy = errorId || '';
-  else if (hint) describedBy = hintId || '';
 
   return (
     <div className="auth-field">
@@ -45,8 +40,10 @@ export function TextField({
           {...props}
           type={inputType}
           className={`${showToggle && isPassword ? 'has-toggle' : ''} ${fieldError ? 'input--error' : ''} ${className ?? ''}`}
-          aria-invalid={!!fieldError}
-          aria-describedby={describedBy || undefined}
+          aria-invalid={fieldError ? true : undefined}
+          aria-describedby={
+            fieldError ? `${props.id}-error` : hint ? `${props.id}-hint` : undefined
+          }
         />
         {showToggle && isPassword && (
           <button
@@ -72,16 +69,20 @@ export function TextField({
           </button>
         )}
       </div>
-      {fieldError && (
-        <span id={errorId} className="auth-field__error" role="alert" style={{ color: 'var(--red, #ef4444)', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+      {fieldError ? (
+        <p
+          id={`${props.id}-error`}
+          className="auth-field__hint auth-field__hint--error"
+          role="alert"
+          data-testid={errorTestId}
+        >
           {fieldError}
-        </span>
-      )}
-      {hint && !fieldError && (
-        <span id={hintId} className="auth-field__hint" style={{ color: 'var(--gray, #6b7280)', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+        </p>
+      ) : hint ? (
+        <p id={`${props.id}-hint`} className="auth-field__hint">
           {hint}
-        </span>
-      )}
+        </p>
+      ) : null}
     </div>
   )
 }

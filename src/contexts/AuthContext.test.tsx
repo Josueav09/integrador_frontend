@@ -1,89 +1,74 @@
-import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
-import { AuthProvider, useAuth } from './AuthContext';
-import { apiClient } from '../api/client';
-import '@testing-library/jest-dom';
+import React from 'react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { AuthProvider, useAuth } from './AuthContext'
+import { AUTH_STORAGE_KEY } from '../api/session'
+import { apiClient } from '../api/client'
 
 vi.mock('../api/client', () => ({
   apiClient: {
     post: vi.fn(),
   },
-  AUTH_STORAGE_KEY: 'test_auth_key',
-}));
+}))
 
-const TestingComponent = () => {
-  const { user, isAuthenticated, login, logout } = useAuth();
-  return (
-    <div>
-      <span data-testid="auth-status">{isAuthenticated ? 'Auth' : 'NoAuth'}</span>
-      <span data-testid="user-email">{user?.email || 'Guest'}</span>
-      <button onClick={() => login('test@pnp.gob.pe', 'password')}>Login</button>
-      <button onClick={logout}>Logout</button>
-    </div>
-  );
-};
+function wrapper({ children }: { children: ReactNode }) {
+  return <AuthProvider>{children}</AuthProvider>
+}
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    localStorage.clear();
-    vi.clearAllMocks();
-  });
+    localStorage.clear()
+    vi.mocked(apiClient.post).mockReset()
+  })
 
-  it('debe iniciar sin autenticación si localstorage está vacío', () => {
-    render(
-      <AuthProvider>
-        <TestingComponent />
-      </AuthProvider>
-    );
+  it('login guarda la sesión en localStorage', async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      data: { access_token: 'token-abc', rol_id: 1 },
+    })
 
-    expect(screen.getByTestId('auth-status')).toHaveTextContent('NoAuth');
-    expect(screen.getByTestId('user-email')).toHaveTextContent('Guest');
-  });
+    const { result } = renderHook(() => useAuth(), { wrapper })
 
-  it('debe autenticar al usuario tras una llamada exitosa de login', async () => {
-    vi.mocked(apiClient.post).mockResolvedValue({
-      data: { access_token: 'fake_jwt_token', token_type: 'bearer' },
-    });
-
-    render(
-      <AuthProvider>
-        <TestingComponent />
-      </AuthProvider>
-    );
-
-    const loginBtn = screen.getByRole('button', { name: 'Login' });
     await act(async () => {
-      loginBtn.click();
-    });
+      await result.current.login('admin@pnp.gob.pe', 'clave123')
+    })
 
-    expect(screen.getByTestId('auth-status')).toHaveTextContent('Auth');
-    expect(screen.getByTestId('user-email')).toHaveTextContent('test@pnp.gob.pe');
-  });
+    const stored = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}')
+    expect(stored.access_token).toBe('token-abc')
+    expect(result.current.isAuthenticated).toBe(true)
+    expect(result.current.rolId).toBe(1)
+  })
 
-  it('debe limpiar los datos del usuario tras hacer logout', () => {
-    localStorage.setItem(
-      'test_auth_key',
-      JSON.stringify({
-        access_token: 'fake_token',
-        user: { email: 'admin@pnp.gob.pe', name: 'admin' },
-      })
-    );
+  it('logout limpia la sesión', async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      data: { access_token: 'token-abc', rol_id: 2 },
+    })
 
-    render(
-      <AuthProvider>
-        <TestingComponent />
-      </AuthProvider>
-    );
+    const { result } = renderHook(() => useAuth(), { wrapper })
 
-    expect(screen.getByTestId('auth-status')).toHaveTextContent('Auth');
-    
-    const logoutBtn = screen.getByRole('button', { name: 'Logout' });
+    await act(async () => {
+      await result.current.login('analista@pnp.gob.pe', 'clave123')
+    })
+
     act(() => {
-      logoutBtn.click();
-    });
+      result.current.logout()
+    })
 
-    expect(screen.getByTestId('auth-status')).toHaveTextContent('NoAuth');
-    expect(localStorage.getItem('test_auth_key')).toBeNull();
-  });
-});
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull()
+    expect(result.current.isAuthenticated).toBe(false)
+  })
+
+  it('propaga mensaje de error del backend', async () => {
+    vi.mocked(apiClient.post).mockRejectedValueOnce({
+      response: { data: { detail: 'Credenciales inválidas' } },
+    })
+
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    await expect(
+      act(async () => {
+        await result.current.login('admin@pnp.gob.pe', 'mala')
+      }),
+    ).rejects.toThrow('Credenciales inválidas')
+  })
+})

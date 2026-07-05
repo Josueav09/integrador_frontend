@@ -9,6 +9,7 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 
 const PRECISION_OVER_TIME = [
@@ -27,6 +28,7 @@ const MODEL_VERSIONS = [
 ]
 
 export function MonitorPage() {
+  const { notifyApiError } = useNotification()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [logsOpen, setLogsOpen] = useState(false)
@@ -44,7 +46,7 @@ export function MonitorPage() {
         }
       } catch (err: any) {
         if (err.name !== 'CanceledError') {
-          console.error("Error fetching model monitor:", err)
+          notifyApiError(err, 'No se pudo cargar el monitor del modelo.')
         }
       } finally {
         if (active) setLoading(false)
@@ -57,7 +59,7 @@ export function MonitorPage() {
       active = false
       controller.abort()
     }
-  }, [])
+  }, [notifyApiError])
 
   const version = data?.version || 'v1.2'
   const precision = data?.precision || '94.2%'

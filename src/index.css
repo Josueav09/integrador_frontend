@@ -1,6 +1,8 @@
 @import './styles/auth.css';
 @import './styles/dashboard.css';
 @import './styles/polish.css';
+@import './styles/accessibility.css';
+@import './styles/report-crime.css';
 
 .auth-success__btn {
   display: block;
@@ -9,5 +11,9 @@
 }
 
 #root {
+  min-height: 100vh;
+}
+
+.app-scale {
   min-height: 100vh;
 }

@@ -1,75 +1,69 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useNotification } from '../../contexts/NotificationContext'
 import { AuthLayout } from '../../components/auth/AuthLayout'
-import { GoogleButton } from '../../components/auth/GoogleButton'
 import { TextField } from '../../components/auth/TextField'
 import { PrimaryButton } from '../../components/auth/PrimaryButton'
-import { getEmailError, getPasswordError, getNameError } from '../../utils/formValidation'
+import { apiClient } from '../../api/client'
+import { getApiErrorMessage } from '../../utils/apiError'
+import { getEmailError, getNameError, getPasswordError } from '../../utils/formValidation'
 
 export function RegisterPage() {
   const navigate = useNavigate()
-  const { notifySuccess } = useNotification()
-
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-
   const [nameError, setNameError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
-
-  const handleNameBlur = () => {
-    setNameError(getNameError(name))
-  }
-
-  const handleEmailBlur = () => {
-    setEmailError(getEmailError(email))
-  }
-
-  const handlePasswordBlur = () => {
-    setPasswordError(getPasswordError(password))
-  }
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const isValid =
-    name.trim().length > 0 &&
-    email.trim().length > 0 &&
-    password.trim().length > 0 &&
-    !nameError &&
-    !emailError &&
-    !passwordError
+    !getNameError(name) &&
+    !getEmailError(email) &&
+    !getPasswordError(password)
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (loading) return
 
-    const nErr = getNameError(name)
-    const eErr = getEmailError(email)
-    const pErr = getPasswordError(password)
+    const nextNameError = getNameError(name)
+    const nextEmailError = getEmailError(email)
+    const nextPasswordError = getPasswordError(password)
+    setNameError(nextNameError)
+    setEmailError(nextEmailError)
+    setPasswordError(nextPasswordError)
+    if (nextNameError || nextEmailError || nextPasswordError) return
 
-    if (nErr || eErr || pErr) {
-      setNameError(nErr)
-      setEmailError(eErr)
-      setPasswordError(pErr)
-      return
+    setError(null)
+    setLoading(true)
+    try {
+      const [nombre, ...apellidoParts] = name.trim().split(/\s+/)
+      await apiClient.post('/auth/register', {
+        nombre: nombre || name.trim(),
+        apellido: apellidoParts.join(' ') || nombre || 'Usuario',
+        email: email.trim(),
+        password,
+      })
+      navigate('/register/success', { state: { email: email.trim(), name: name.trim() } })
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'No se pudo crear la cuenta. Intente nuevamente.'))
+    } finally {
+      setLoading(false)
     }
-
-    notifySuccess('¡Registro completado de forma simulada!')
-    navigate('/register/success', { state: { email, name } })
-  }
-
-  const handleGoogleRegister = () => {
-    notifySuccess('¡Registro con Google exitoso!')
-    navigate('/register/success', {
-      state: { email: 'usuario@gmail.com', name: 'Usuario Google' },
-    })
   }
 
   return (
     <AuthLayout variant="register">
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <h1>Regístrate</h1>
-        <GoogleButton onClick={handleGoogleRegister} />
-        <p className="auth-divider">o regístrate con tu email</p>
+
+        {error && (
+          <div className="auth-error-banner" role="alert">
+            {error}
+          </div>
+        )}
+
         <TextField
           id="register-name"
           label="Nombre"
@@ -78,12 +72,12 @@ export function RegisterPage() {
           value={name}
           onChange={(e) => {
             setName(e.target.value)
-            if (nameError) setNameError(null)
+            if (nameError) setNameError(getNameError(e.target.value))
           }}
-          onBlur={handleNameBlur}
+          onBlur={() => setNameError(getNameError(name))}
           autoComplete="name"
-          data-testid="register-name-input"
           fieldError={nameError}
+          data-testid="register-name-input"
         />
         <TextField
           id="register-email"
@@ -93,13 +87,13 @@ export function RegisterPage() {
           value={email}
           onChange={(e) => {
             setEmail(e.target.value)
-            if (emailError) setEmailError(null)
+            if (emailError) setEmailError(getEmailError(e.target.value))
           }}
-          onBlur={handleEmailBlur}
+          onBlur={() => setEmailError(getEmailError(email))}
           autoComplete="email"
-          data-testid="register-email-input"
-          hint="Ingresa tu correo institucional"
+          hint="Debe ser un correo válido con formato usuario@dominio.com"
           fieldError={emailError}
+          data-testid="register-email-input"
         />
         <TextField
           id="register-password"
@@ -110,15 +104,17 @@ export function RegisterPage() {
           value={password}
           onChange={(e) => {
             setPassword(e.target.value)
-            if (passwordError) setPasswordError(null)
+            if (passwordError) setPasswordError(getPasswordError(e.target.value))
           }}
-          onBlur={handlePasswordBlur}
+          onBlur={() => setPasswordError(getPasswordError(password))}
           autoComplete="new-password"
-          data-testid="register-password-input"
-          hint="La contraseña debe tener al menos 6 caracteres"
+          hint="Mínimo 6 caracteres."
           fieldError={passwordError}
+          data-testid="register-password-input"
         />
-        <PrimaryButton disabled={!isValid} data-testid="register-submit-button">Crear cuenta</PrimaryButton>
+        <PrimaryButton disabled={!isValid || loading} data-testid="register-submit-button">
+          {loading ? 'Creando cuenta...' : 'Crear cuenta'}
+        </PrimaryButton>
         <p className="auth-footer">
           ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
         </p>
@@ -126,4 +122,3 @@ export function RegisterPage() {
     </AuthLayout>
   )
 }
-

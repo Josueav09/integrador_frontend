@@ -1,9 +1,12 @@
 import axios from 'axios'
+import { AUTH_STORAGE_KEY } from './session'
 
-// La URL base del backend FastAPI. Usa la variable de entorno o localhost por defecto.
+export { AUTH_STORAGE_KEY }
+
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-// Instancia global de Axios pre-configurada
+const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/verify-code', '/auth/reset-password']
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -11,18 +14,17 @@ export const apiClient = axios.create({
   },
 })
 
-// Clave donde guardaremos el JWT y los datos del usuario
-export const AUTH_STORAGE_KEY = 'gnn_crime_ai_session'
-
-// Interceptor de Peticiones: Adjuntar el Token JWT
 apiClient.interceptors.request.use(
   (config) => {
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+
     try {
       const rawSession = localStorage.getItem(AUTH_STORAGE_KEY)
       if (rawSession) {
         const sessionData = JSON.parse(rawSession)
-        // Si existe un token JWT en el storage, inyectarlo como Bearer Token
-        if (sessionData && sessionData.access_token) {
+        if (sessionData?.access_token) {
           config.headers.Authorization = `Bearer ${sessionData.access_token}`
         }
       }
@@ -31,20 +33,23 @@ apiClient.interceptors.request.use(
     }
     return config
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 )
 
-// Interceptor de Respuestas: Manejar caducidad del token (HTTP 401)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Si el token expira o es inválido, limpiamos la sesión para obligar re-login
-      console.warn("Sesión expirada o token inválido (401).")
+    const status = error.response?.status
+    const requestUrl: string = error.config?.url ?? ''
+    const isAuthRequest = AUTH_PATHS.some((path) => requestUrl.includes(path))
+
+    if (status === 401 && !isAuthRequest) {
       localStorage.removeItem(AUTH_STORAGE_KEY)
-      // Opcional: Redirigir al login si ocurre un 401
-      // window.location.href = '/login'
+      const onLogin = window.location.pathname.startsWith('/login')
+      if (!onLogin) {
+        window.location.href = '/login?session=expired'
+      }
     }
     return Promise.reject(error)
-  }
+  },
 )

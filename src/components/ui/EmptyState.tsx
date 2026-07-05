@@ -1,21 +1,20 @@
-
-
-export interface EmptyStateProps {
-  title?: string;
-  description?: string;
+type EmptyStateProps = {
+  message: string
+  title?: string
+  actionLabel?: string
+  actionHref?: string
 }
 
-export function EmptyState({
-  title = 'Sin datos disponibles',
-  description = 'No hay información registrada para mostrar en este período.'
-}: EmptyStateProps) {
+export function EmptyState({ title = 'Sin datos', message, actionLabel, actionHref }: EmptyStateProps) {
   return (
-    <div className="empty-state" data-testid="empty-state-container">
-      <div className="empty-state__icon" aria-hidden="true">
-        📭
-      </div>
-      <h3 className="empty-state__title">{title}</h3>
-      <p className="empty-state__description">{description}</p>
+    <div className="dash-empty-state" role="status" data-testid="empty-state">
+      <strong>{title}</strong>
+      <p>{message}</p>
+      {actionLabel && actionHref && (
+        <p className="dash-empty-state__action">
+          <a href={actionHref}>{actionLabel}</a>
+        </p>
+      )}
     </div>
-  );
+  )
 }

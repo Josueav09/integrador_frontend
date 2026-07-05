@@ -1,0 +1,233 @@
+================================================================================
+  GNN CRIME AI - FRONTEND (integrador_frontend)
+  Resumen de cambios para APF3
+  Fecha: Junio 2026
+  Rama de trabajo: matias / matias-flujos
+================================================================================
+
+OBJETIVO
+--------
+Mejorar calidad de software (ISO 25010), pruebas automatizadas, feedback al
+usuario y validación de datos para cumplir la rúbrica APF3.
+
+
+--------------------------------------------------------------------------------
+1. PRUEBAS AUTOMATIZADAS (VITEST + TESTING LIBRARY)
+--------------------------------------------------------------------------------
+
+Scripts nuevos (package.json):
+  - npm run test          -> Vitest en modo watch
+  - npm run test:run      -> Ejecuta suite una vez (31 tests)
+  - npm run test:coverage -> Genera reporte en coverage/index.html
+
+Dependencia agregada:
+  - @vitest/coverage-v8@2.1.9
+
+Archivos de prueba:
+  - src/utils/apiError.test.ts
+  - src/utils/uploadValidation.test.ts
+  - src/components/ui/StatusBanner.test.tsx
+  - src/pages/auth/LoginPage.test.tsx
+  - src/pages/auth/RegisterPage.test.tsx
+  - src/components/auth/ProtectedRoute.test.tsx
+  - src/components/auth/GuestRoute.test.tsx
+  - src/contexts/AuthContext.test.tsx
+
+Cobertura destacada:
+  - LoginPage, RegisterPage, AuthContext, ProtectedRoute, GuestRoute ~95-100%
+  - apiError.ts, uploadValidation.ts, StatusBanner.tsx
+
+Configuración:
+  - vite.config.ts -> bloque coverage (provider v8, HTML + JSON)
+  - vitest.setup.ts -> @testing-library/jest-dom
+  - tsconfig.app.json -> excluye *.test.ts(x) del build de producción
+  - .gitignore -> carpeta coverage/
+
+Nota: Los tests con JSX requieren "import React from 'react'" en cada .test.tsx
+
+
+--------------------------------------------------------------------------------
+2. SISTEMA GLOBAL DE NOTIFICACIONES (TOASTS)
+--------------------------------------------------------------------------------
+
+Archivos nuevos:
+  - src/contexts/NotificationContext.tsx
+
+Integración:
+  - App.tsx envuelve la app con <NotificationProvider>
+
+API del contexto (useNotification):
+  - notifyError(message)
+  - notifySuccess(message)
+  - notifyInfo(message)
+  - notifyApiError(error, fallback?)
+
+Comportamiento:
+  - Toasts fijos arriba a la derecha (notification-host en dashboard.css)
+  - Auto-cierre: error 8s, éxito/info 5s
+  - Reutiliza componente StatusBanner
+
+Páginas que usan toasts (en lugar de useState(error) local):
+  - DashboardPage, PredictionsPage, AnalysisPage, MonitorPage
+  - GnnNetworkPage, ModelMetricsPage, CrimeMapPage
+  - AdminPage (errores de carga y polling)
+  - UserManagementModal
+
+
+--------------------------------------------------------------------------------
+3. COMPONENTES Y UTILIDADES NUEVOS
+--------------------------------------------------------------------------------
+
+src/components/ui/StatusBanner.tsx
+  - Banners error / info / success con role alert/status
+  - Botón cerrar opcional
+
+src/components/ui/EmptyState.tsx
+  - Mensaje cuando el API responde OK pero sin datos
+  - Usado en: Dashboard, Predicciones, Mapa, Red GNN, Métricas
+
+src/utils/apiError.ts (mejorado)
+  - Detecta ERR_NETWORK -> "No se pudo conectar con el servidor..."
+  - Detecta HTTP 503
+  - Parsea detail de FastAPI (string o array de validación)
+
+src/utils/formValidation.ts (nuevo)
+  - getEmailError, getPasswordError, getLoginPasswordError, getNameError
+  - isValidEmail
+
+src/utils/uploadValidation.ts (nuevo)
+  - Valida extensión (.csv, .json), tamaño (10 MB), archivo vacío
+  - Valida columnas CSV: id_cuadrante, id_tipo_delito, fecha_delito, ubicacion
+  - Valida estructura JSON (arreglo de objetos con mismos campos)
+
+
+--------------------------------------------------------------------------------
+4. FORMULARIOS AUTH - VALIDACIÓN Y HINTS
+--------------------------------------------------------------------------------
+
+src/components/auth/TextField.tsx
+  - Props nuevas: hint, fieldError
+  - Estilos: auth-field__hint, input--error
+
+Páginas actualizadas:
+  - LoginPage.tsx       -> email + contraseña validados antes del submit
+  - RegisterPage.tsx    -> nombre, email, contraseña min 6 chars + hints
+  - ForgotPasswordEmailPage.tsx
+  - ForgotPasswordNewPage.tsx -> confirmación de contraseña coincidente
+
+Estilos en auth.css para hints y errores de campo.
+
+
+--------------------------------------------------------------------------------
+5. DASHBOARD - ERRORES, ÉXITO Y ESTADOS VACÍOS
+--------------------------------------------------------------------------------
+
+AdminPage.tsx
+  - Validación de archivo ANTES de subir (uploadValidation)
+  - StatusBanner inline para progreso/resultado de carga CSV
+  - Toasts para errores de carga del módulo y polling de reentrenamiento
+  - Mensaje de éxito indica registros válidos e inválidos
+
+InboxPage.tsx
+  - StatusBanner verde al aprobar denuncia
+  - StatusBanner verde al rechazar/descartar
+  - StatusBanner rojo si falla carga o acción
+
+CrimeMapPage.tsx
+  - Toasts en todos los fetch (histórico, distritos, stats, predicciones)
+  - EmptyState cuando no hay puntos en el mapa
+
+UserManagementModal.tsx
+  - Reemplazados alert() por toasts globales
+
+
+--------------------------------------------------------------------------------
+6. FLUJOS AUTH EXISTENTES (sesión anterior, incluidos en este entregable)
+--------------------------------------------------------------------------------
+
+- AuthContext: login JWT real, logout, rol_id en sesión
+- ProtectedRoute / GuestRoute
+- api/client.ts: interceptor 401 -> redirect /login?session=expired
+- data-testid en login, registro, admin, mapa, inbox, denuncias (para E2E futuro)
+
+
+--------------------------------------------------------------------------------
+7. ARCHIVOS MODIFICADOS (lista principal)
+--------------------------------------------------------------------------------
+
+Nuevos:
+  src/contexts/NotificationContext.tsx
+  src/components/ui/StatusBanner.tsx
+  src/components/ui/EmptyState.tsx
+  src/utils/formValidation.ts
+  src/utils/uploadValidation.ts
+  src/**/*.test.ts(x) (8 archivos)
+
+Modificados:
+  src/App.tsx
+  src/pages/auth/*.tsx (Login, Register, ForgotPassword*)
+  src/pages/dashboard/*.tsx (todas las páginas del panel)
+  src/components/auth/TextField.tsx
+  src/components/dashboard/UserManagementModal.tsx
+  src/utils/apiError.ts
+  src/styles/dashboard.css
+  src/styles/auth.css
+  package.json, vite.config.ts, tsconfig.app.json, .gitignore, README.md
+
+Eliminado:
+  src/VerifyVitest.test.tsx (test placeholder 1+1=2)
+
+
+--------------------------------------------------------------------------------
+8. CÓMO EJECUTAR Y VERIFICAR
+--------------------------------------------------------------------------------
+
+  npm install
+  npm run test:run        # debe mostrar 31 passed
+  npm run test:coverage   # abrir coverage/index.html
+  npm run build           # build sin errores
+  npm run dev             # http://localhost:5173
+
+Pruebas manuales recomendadas (capturas para informe APF3):
+  1. Login con credenciales incorrectas
+  2. Backend apagado -> toast de conexión
+  3. Admin -> subir archivo .xlsx o CSV sin columnas correctas
+  4. Inbox -> aprobar denuncia -> banner verde
+  5. Dashboard sin datos -> EmptyState visible
+
+
+--------------------------------------------------------------------------------
+9. PENDIENTE (fuera de este diff de código)
+--------------------------------------------------------------------------------
+
+  - Informe ISO 25010 (Word)
+  - Deploy cloud v2 + capturas
+  - PPT sustentación
+  - Suite Selenium del equipo (STGNNTestSuite) — contrato en ../CONTRATO_PRUEBAS_E2E.txt
+  - Lighthouse (accesibilidad/performance)
+
+
+--------------------------------------------------------------------------------
+10. COMPATIBILIDAD SELENIUM SIN ROMPER E2E DEL EQUIPO (Jun 2026)
+--------------------------------------------------------------------------------
+
+Contrato: ../CONTRATO_PRUEBAS_E2E.txt
+
+CAMBIOS ALINEADOS AL INFORME SELENIUM (test_02_login_flow):
+  - Mensaje email inválido: "El formato del correo institucional es incorrecto."
+  - Toast éxito login: "Sesión iniciada con éxito" (NotificationContext)
+  - data-testid login-email-error en TextField
+  - Script npm run dev:selenium  -> puerto 3000 para Chrome WebDriver
+
+ARCHIVOS TOCADOS:
+  src/utils/formValidation.ts
+  src/pages/auth/LoginPage.tsx
+  src/components/auth/TextField.tsx
+  src/pages/auth/LoginPage.test.tsx (mock NotificationContext)
+  package.json (dev:selenium)
+
+NO SE MODIFICARON:
+  - Ningún data-testid listado en el contrato
+  - Rutas /login, /dashboard, /reportar-denuncia, etc.
+
+================================================================================
