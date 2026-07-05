@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 
 const RISK_COLORS = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }
 
 export function GnnNetworkPage() {
+  const { notifyApiError } = useNotification()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -21,7 +24,7 @@ export function GnnNetworkPage() {
         }
       } catch (err: any) {
         if (err.name !== 'CanceledError') {
-          console.error("Error fetching GNN graph:", err)
+          notifyApiError(err, 'No se pudo cargar la red GNN.')
         }
       } finally {
         if (active) setLoading(false)
@@ -34,7 +37,7 @@ export function GnnNetworkPage() {
       active = false
       controller.abort()
     }
-  }, [])
+  }, [notifyApiError])
 
   const nodes = data?.nodos || []
   const edges = data?.aristas || []
@@ -128,7 +131,9 @@ export function GnnNetworkPage() {
             </div>
             <div className="dash-card">
               <h3>Correlaciones Más Fuertes</h3>
-              {correlations.map((c: any) => (
+              {correlations.length === 0 ? (
+                <EmptyState message="No hay correlaciones registradas para la red GNN." />
+              ) : correlations.map((c: any) => (
                 <div key={c.pair} className="dash-correlation">
                   <span>{c.pair}</span>
                   <strong>{c.value}%</strong>

@@ -1,55 +1,72 @@
-import { describe, it, expect } from 'vitest';
-import { validateUploadFile, validateCsvHeaders } from './uploadValidation';
+import { describe, expect, it } from 'vitest'
+import {
+  validateCsvContent,
+  validateJsonContent,
+  validateUploadFileMeta,
+} from './uploadValidation'
 
-describe('uploadValidation - validateUploadFile', () => {
-  it('debe rechazar archivos nulos', () => {
-    const res = validateUploadFile(null as any);
-    expect(res.isValid).toBe(false);
-    expect(res.error).toContain('No se ha seleccionado');
-  });
+function makeFile(name: string, content: string, type = 'text/plain'): File {
+  return new File([content], name, { type })
+}
 
-  it('debe rechazar extensiones inválidas como png o xlsx', () => {
-    const file = new File([''], 'delitos.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const res = validateUploadFile(file);
-    expect(res.isValid).toBe(false);
-    expect(res.error).toContain('Solo se permiten archivos CSV o JSON');
-  });
+describe('validateUploadFileMeta', () => {
+  it('rechaza extensiones no permitidas', () => {
+    const file = makeFile('datos.xlsx', 'contenido')
+    expect(validateUploadFileMeta(file)).toBe('Solo se permiten archivos CSV o JSON.')
+  })
 
-  it('debe rechazar archivos que superen los 10MB', () => {
-    const file = new File([''], 'delitos.csv', { type: 'text/csv' });
-    Object.defineProperty(file, 'size', { value: 11 * 1024 * 1024 }); // 11MB
-    const res = validateUploadFile(file);
-    expect(res.isValid).toBe(false);
-    expect(res.error).toContain('supera el límite de 10 MB');
-  });
+  it('rechaza archivos vacíos', () => {
+    const file = makeFile('datos.csv', '')
+    expect(validateUploadFileMeta(file)).toBe('El archivo está vacío.')
+  })
 
-  it('debe rechazar archivos vacíos', () => {
-    const file = new File([''], 'delitos.csv', { type: 'text/csv' });
-    Object.defineProperty(file, 'size', { value: 0 });
-    const res = validateUploadFile(file);
-    expect(res.isValid).toBe(false);
-    expect(res.error).toContain('está vacío');
-  });
+  it('acepta metadatos válidos', () => {
+    const file = makeFile('datos.csv', 'a')
+    expect(validateUploadFileMeta(file)).toBeNull()
+  })
+})
 
-  it('debe aceptar archivos CSV válidos y de tamaño correcto', () => {
-    const file = new File(['id_cuadrante,id_tipo_delito'], 'delitos.csv', { type: 'text/csv' });
-    Object.defineProperty(file, 'size', { value: 250 });
-    const res = validateUploadFile(file);
-    expect(res.isValid).toBe(true);
-    expect(res.error).toBeNull();
-  });
-});
+describe('validateCsvContent', () => {
+  const header = 'id_cuadrante,id_tipo_delito,fecha_delito,ubicacion'
 
-describe('uploadValidation - validateCsvHeaders', () => {
-  it('debe rechazar CSV con cabeceras incompletas', () => {
-    const res = validateCsvHeaders('id_cuadrante,fecha_delito');
-    expect(res.isValid).toBe(false);
-    expect(res.error).toContain('Columnas faltantes');
-  });
+  it('rechaza CSV sin filas de datos', () => {
+    expect(validateCsvContent(header)).toContain('al menos una fila')
+  })
 
-  it('debe aceptar CSV con cabeceras válidas', () => {
-    const res = validateCsvHeaders('id_cuadrante,id_tipo_delito,fecha_delito,ubicacion');
-    expect(res.isValid).toBe(true);
-    expect(res.error).toBeNull();
-  });
-});
+  it('rechaza columnas faltantes', () => {
+    const csv = 'id_cuadrante,fecha_delito\n1,2024-01-01'
+    expect(validateCsvContent(csv)).toContain('Faltan columnas')
+  })
+
+  it('acepta CSV con estructura correcta', () => {
+    const csv = `${header}\n101,2,2024-01-01,POINT(-77.03 -12.05)`
+    expect(validateCsvContent(csv)).toBeNull()
+  })
+})
+
+describe('validateJsonContent', () => {
+  it('rechaza JSON mal formado', () => {
+    expect(validateJsonContent('{invalid')).toContain('formato válido')
+  })
+
+  it('rechaza arreglo vacío', () => {
+    expect(validateJsonContent('[]')).toContain('al menos un registro')
+  })
+
+  it('rechaza campos faltantes', () => {
+    const json = JSON.stringify([{ id_cuadrante: 1 }])
+    expect(validateJsonContent(json)).toContain('Faltan campos')
+  })
+
+  it('acepta JSON válido', () => {
+    const json = JSON.stringify([
+      {
+        id_cuadrante: 1,
+        id_tipo_delito: 2,
+        fecha_delito: '2024-01-01',
+        ubicacion: 'POINT(-77.03 -12.05)',
+      },
+    ])
+    expect(validateJsonContent(json)).toBeNull()
+  })
+})

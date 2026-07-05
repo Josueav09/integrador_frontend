@@ -1,57 +1,93 @@
-import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { LoginPage } from './LoginPage';
-import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../../contexts/AuthContext';
-import { NotificationProvider } from '../../contexts/NotificationContext';
-import '@testing-library/jest-dom';
+import React from 'react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { PreferencesProvider } from '../../contexts/PreferencesContext'
+import { LoginPage } from './LoginPage'
 
-describe('LoginPage Component', () => {
-  const renderComponent = () => {
-    return render(
-      <AuthProvider>
-        <NotificationProvider>
-          <BrowserRouter>
-            <LoginPage />
-          </BrowserRouter>
-        </NotificationProvider>
-      </AuthProvider>
-    );
-  };
+const mockLogin = vi.fn()
+const mockNavigate = vi.fn()
 
-  it('debe deshabilitar el botón de login al inicio si los campos están vacíos', () => {
-    renderComponent();
-    
-    const loginBtn = screen.getByRole('button', { name: /Iniciar sesión/i });
-    expect(loginBtn).toBeDisabled();
-  });
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ login: mockLogin }),
+}))
 
-  it('debe alertar sobre correo inválido al perder el foco (onBlur)', async () => {
-    renderComponent();
-    
-    const emailInput = screen.getByLabelText(/Correo electrónico/i);
-    fireEvent.change(emailInput, { target: { value: 'correo_incorrecto' } });
-    fireEvent.blur(emailInput);
+vi.mock('../../contexts/NotificationContext', () => ({
+  useNotification: () => ({ notifySuccess: vi.fn(), notifyError: vi.fn(), notifyApiError: vi.fn() }),
+}))
 
-    expect(await screen.findByText(/formato del correo institucional/i)).toBeInTheDocument();
-  });
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  }
+})
 
-  it('debe habilitar el botón cuando el correo y contraseña ingresados son formalmente válidos', async () => {
-    renderComponent();
-    
-    const emailInput = screen.getByLabelText(/Correo electrónico/i);
-    const passwordInput = screen.getByLabelText('Contraseña');
-    const loginBtn = screen.getByRole('button', { name: /Iniciar sesión/i });
+function renderLogin(route = '/login') {
+  return render(
+    <PreferencesProvider>
+      <MemoryRouter initialEntries={[route]}>
+        <LoginPage />
+      </MemoryRouter>
+    </PreferencesProvider>,
+  )
+}
 
-    fireEvent.change(emailInput, { target: { value: 'admin@pnp.gob.pe' } });
-    fireEvent.change(passwordInput, { target: { value: 'TesisUTP2026*' } });
-    
-    fireEvent.blur(emailInput);
-    fireEvent.blur(passwordInput);
+describe('LoginPage', () => {
+  beforeEach(() => {
+    mockLogin.mockReset()
+    mockNavigate.mockReset()
+  })
+
+  it('deshabilita el botón si faltan credenciales', () => {
+    renderLogin()
+    expect(screen.getByTestId('login-submit-button')).toBeDisabled()
+  })
+
+  it('habilita el botón con email y contraseña', () => {
+    renderLogin()
+    fireEvent.change(screen.getByTestId('login-email-input'), {
+      target: { value: 'admin@pnp.gob.pe' },
+    })
+    fireEvent.change(screen.getByTestId('login-password-input'), {
+      target: { value: 'clave123' },
+    })
+    expect(screen.getByTestId('login-submit-button')).not.toBeDisabled()
+  })
+
+  it('muestra error cuando falla el login', async () => {
+    mockLogin.mockRejectedValueOnce(new Error('Credenciales inválidas'))
+    renderLogin()
+
+    fireEvent.change(screen.getByTestId('login-email-input'), {
+      target: { value: 'admin@pnp.gob.pe' },
+    })
+    fireEvent.change(screen.getByTestId('login-password-input'), {
+      target: { value: 'mala-clave' },
+    })
+    fireEvent.click(screen.getByTestId('login-submit-button'))
 
     await waitFor(() => {
-      expect(loginBtn).toBeEnabled();
-    });
-  });
-});
+      expect(screen.getByRole('alert')).toHaveTextContent('Credenciales inválidas')
+    })
+  })
+
+  it('redirige al dashboard tras login exitoso', async () => {
+    mockLogin.mockResolvedValueOnce(undefined)
+    renderLogin()
+
+    fireEvent.change(screen.getByTestId('login-email-input'), {
+      target: { value: 'admin@pnp.gob.pe' },
+    })
+    fireEvent.change(screen.getByTestId('login-password-input'), {
+      target: { value: 'clave123' },
+    })
+    fireEvent.click(screen.getByTestId('login-submit-button'))
+
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith('admin@pnp.gob.pe', 'clave123')
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
+    })
+  })
+})

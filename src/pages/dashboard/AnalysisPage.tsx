@@ -17,9 +17,11 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 
 export function AnalysisPage() {
+  const { notifyApiError } = useNotification()
   const [anio, setAnio] = useState<string>('todos')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -38,7 +40,7 @@ export function AnalysisPage() {
         }
       } catch (err: any) {
         if (err.name !== 'CanceledError') {
-          console.error("Error loading analysis data:", err)
+          notifyApiError(err, 'No se pudieron cargar los datos de análisis.')
         }
       } finally {
         if (active) setLoading(false)
@@ -51,7 +53,7 @@ export function AnalysisPage() {
       active = false
       controller.abort()
     }
-  }, [anio])
+  }, [anio, notifyApiError])
 
   const kpis = data?.kpis || []
   const monthlyByType = data?.monthly_by_type || []

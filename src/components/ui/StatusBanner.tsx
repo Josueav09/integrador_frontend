@@ -1,35 +1,20 @@
-
-
-export type BannerVariant = 'error' | 'success' | 'info';
-
-export interface StatusBannerProps {
-  variant: BannerVariant;
-  message: string;
-  onClose?: () => void;
+type StatusBannerProps = {
+  type: 'error' | 'info' | 'success'
+  message: string
+  onDismiss?: () => void
 }
 
-export function StatusBanner({ variant, message, onClose }: StatusBannerProps) {
-  if (!message) return null;
-
-  // Determinar rol semántico de accesibilidad
-  const role = variant === 'error' ? 'alert' : 'status';
-
-  // Determinar clase de estilo CSS
-  const bannerClass = `status-banner status-banner--${variant}`;
+export function StatusBanner({ type, message, onDismiss }: StatusBannerProps) {
+  const role = type === 'error' ? 'alert' : 'status'
 
   return (
-    <div className={bannerClass} role={role}>
-      <span className="status-banner__message">{message}</span>
-      {onClose && (
-        <button
-          type="button"
-          className="status-banner__close-btn"
-          onClick={onClose}
-          aria-label="Cerrar banner de notificación"
-        >
-          &times;
+    <div className={`status-banner status-banner--${type}`} role={role} data-testid={`status-banner-${type}`}>
+      <span>{message}</span>
+      {onDismiss && (
+        <button type="button" className="status-banner__dismiss" onClick={onDismiss} aria-label="Cerrar mensaje">
+          ×
         </button>
       )}
     </div>
-  );
+  )
 }

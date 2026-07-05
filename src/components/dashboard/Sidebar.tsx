@@ -1,15 +1,33 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { NAV_ITEMS } from '../../data/mockData'
+import { useTranslation } from '../../contexts/PreferencesContext'
 import { NavIcon, ShieldIcon } from '../icons/Icons'
+
+const NAV_CONFIG = [
+  { path: '/dashboard', labelKey: 'nav.dashboard' as const, icon: 'dashboard', end: true, testId: 'nav-dashboard' },
+  { path: '/dashboard/mapa', labelKey: 'nav.map' as const, icon: 'map', testId: 'nav-map' },
+  { path: '/dashboard/predicciones', labelKey: 'nav.predictions' as const, icon: 'predict', testId: 'nav-predictions' },
+  { path: '/dashboard/analisis', labelKey: 'nav.analysis' as const, icon: 'analysis', testId: 'nav-analysis' },
+  { path: '/dashboard/red-gnn', labelKey: 'nav.gnn' as const, icon: 'network', testId: 'nav-gnn' },
+  { path: '/dashboard/metricas', labelKey: 'nav.metrics' as const, icon: 'metrics', testId: 'nav-metrics' },
+  { path: '/dashboard/monitor', labelKey: 'nav.monitor' as const, icon: 'monitor', testId: 'nav-monitor' },
+  { path: '/dashboard/administracion', labelKey: 'nav.admin' as const, icon: 'admin', testId: 'nav-admin', roles: [1, 3] },
+  { path: '/dashboard/denuncias', labelKey: 'nav.inbox' as const, icon: 'predict', testId: 'nav-inbox' },
+]
 
 export function Sidebar() {
   const navigate = useNavigate()
-  const { logout, user } = useAuth()
+  const { logout, user, rolId } = useAuth()
+  const { t } = useTranslation()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const closeMobile = () => setMobileOpen(false)
+
+  const visibleNav = NAV_CONFIG.filter((item) => {
+    if (!item.roles) return true
+    return rolId != null && item.roles.includes(rolId)
+  })
 
   return (
     <>
@@ -19,22 +37,23 @@ export function Sidebar() {
             <ShieldIcon size={20} />
           </div>
           <div className="dash-brand__text">
-            <strong>GNN Crime AI</strong>
-            <span>Sistema Predictivo</span>
+            <strong>{t('app.name')}</strong>
+            <span>{t('app.subtitle')}</span>
           </div>
         </div>
         <nav className="dash-nav" onClick={closeMobile}>
-          {NAV_ITEMS.map((item) => (
+          {visibleNav.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === '/dashboard'}
+              end={item.end}
               className={({ isActive }) => (isActive ? 'active' : '')}
+              data-testid={item.testId}
             >
               <span className="dash-nav__icon">
                 <NavIcon name={item.icon} />
               </span>
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -44,7 +63,7 @@ export function Sidebar() {
               {user.name}
             </p>
           )}
-          <p className="dash-sidebar__version">Sistema de Pronóstico Espaciotemporal v1.0</p>
+          <p className="dash-sidebar__version">{t('app.version')}</p>
           <button
             type="button"
             className="dash-logout"
@@ -53,7 +72,7 @@ export function Sidebar() {
               navigate('/login')
             }}
           >
-            ↪ Cerrar Sesión
+            ↪ {t('nav.logout')}
           </button>
         </div>
       </aside>

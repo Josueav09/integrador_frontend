@@ -1,36 +1,78 @@
-import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { RegisterPage } from './RegisterPage';
-import { BrowserRouter } from 'react-router-dom';
-import { NotificationProvider } from '../../contexts/NotificationContext';
-import '@testing-library/jest-dom';
+import React from 'react'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { RegisterPage } from './RegisterPage'
+import { PreferencesProvider } from '../../contexts/PreferencesContext'
+import { apiClient } from '../../api/client'
 
-describe('RegisterPage Component', () => {
-  const renderComponent = () => {
-    return render(
-      <NotificationProvider>
-        <BrowserRouter>
-          <RegisterPage />
-        </BrowserRouter>
-      </NotificationProvider>
-    );
-  };
+const mockNavigate = vi.fn()
 
-  it('debe mostrar errores de contraseña menor a 6 caracteres al perder el foco (onBlur)', async () => {
-    renderComponent();
-    
-    const passwordInput = screen.getByLabelText('Contraseña');
-    fireEvent.change(passwordInput, { target: { value: '123' } });
-    fireEvent.blur(passwordInput);
+vi.mock('../../api/client', () => ({
+  apiClient: {
+    post: vi.fn(),
+  },
+}))
 
-    expect(await screen.findByText(/al menos 6 caracteres/i)).toBeInTheDocument();
-  });
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  }
+})
 
-  it('debe deshabilitar el botón de crear cuenta al inicio si los campos están vacíos', () => {
-    renderComponent();
-    
-    const submitBtn = screen.getByRole('button', { name: /Crear cuenta/i });
-    expect(submitBtn).toBeDisabled();
-  });
-});
+function renderRegister() {
+  return render(
+    <PreferencesProvider>
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>
+    </PreferencesProvider>,
+  )
+}
+
+describe('RegisterPage', () => {
+  beforeEach(() => {
+    vi.mocked(apiClient.post).mockReset()
+    mockNavigate.mockReset()
+  })
+
+  it('deshabilita el botón con datos incompletos', () => {
+    renderRegister()
+    fireEvent.change(screen.getByTestId('register-name-input'), { target: { value: 'Juan' } })
+    expect(screen.getByTestId('register-submit-button')).toBeDisabled()
+  })
+
+  it('habilita el botón con formulario válido', () => {
+    renderRegister()
+    fireEvent.change(screen.getByTestId('register-name-input'), { target: { value: 'Juan Pérez' } })
+    fireEvent.change(screen.getByTestId('register-email-input'), {
+      target: { value: 'juan@pnp.gob.pe' },
+    })
+    fireEvent.change(screen.getByTestId('register-password-input'), {
+      target: { value: 'clave123' },
+    })
+    expect(screen.getByTestId('register-submit-button')).not.toBeDisabled()
+  })
+
+  it('muestra error del backend al fallar el registro', async () => {
+    vi.mocked(apiClient.post).mockRejectedValueOnce({
+      response: { data: { detail: 'El correo ya está registrado' } },
+    })
+
+    renderRegister()
+    fireEvent.change(screen.getByTestId('register-name-input'), { target: { value: 'Juan Pérez' } })
+    fireEvent.change(screen.getByTestId('register-email-input'), {
+      target: { value: 'juan@pnp.gob.pe' },
+    })
+    fireEvent.change(screen.getByTestId('register-password-input'), {
+      target: { value: 'clave123' },
+    })
+    fireEvent.click(screen.getByTestId('register-submit-button'))
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('El correo ya está registrado')
+    })
+  })
+})
