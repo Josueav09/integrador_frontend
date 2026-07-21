@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
 import { apiClient } from '../../api/client'
+import { normalizeMonitorData } from '../../features/monitor/normalizeMonitorData'
 
 const PRECISION_OVER_TIME = [
   { date: '10 May', value: 92.5 },
@@ -27,7 +28,7 @@ const MODEL_VERSIONS = [
 ]
 
 export function MonitorPage() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState(() => normalizeMonitorData(null))
   const [loading, setLoading] = useState(true)
   const [logsOpen, setLogsOpen] = useState(false)
 
@@ -40,10 +41,10 @@ export function MonitorPage() {
       try {
         const res = await apiClient.get('/predict/monitor', { signal: controller.signal })
         if (active && res.data && res.data.success) {
-          setData(res.data)
+          setData(normalizeMonitorData(res.data))
         }
-      } catch (err: any) {
-        if (err.name !== 'CanceledError') {
+      } catch (err: unknown) {
+        if (!(err instanceof Error) || err.name !== 'CanceledError') {
           console.error("Error fetching model monitor:", err)
         }
       } finally {
@@ -59,12 +60,7 @@ export function MonitorPage() {
     }
   }, [])
 
-  const version = data?.version || 'v1.2'
-  const precision = data?.precision || '94.2%'
-  const registros = data?.registros || 45320
-  const nodos = data?.nodos || 1247
-  const aristas = data?.aristas || 3821
-  const logs = data?.logs || []
+  const { version, precision, registros, nodos, aristas, logs } = data
 
   return (
     <>
@@ -182,7 +178,7 @@ export function MonitorPage() {
               </button>
             </div>
             <div className="dash-modal__body">
-              {logs.map((log: any, idx: number) => (
+              {logs.map((log, idx: number) => (
                 <div key={idx} className={`dash-log-entry dash-log-entry--${log.type}`}>
                   <span>{log.time}</span>
                   <span>{log.msg}</span>
