@@ -12,9 +12,12 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 
 export function PredictionsPage() {
+  const { notifyApiError } = useNotification()
   const [distrito, setDistrito] = useState<string>('TODOS')
   const [distritosDb, setDistritosDb] = useState<string[]>([])
   const [data, setData] = useState<any>(null)
@@ -29,11 +32,11 @@ export function PredictionsPage() {
           setDistritosDb(res.data.data)
         }
       } catch (err) {
-        console.error("Error fetching distritos list:", err)
+        notifyApiError(err, 'No se pudo cargar la lista de distritos.')
       }
     }
     fetchDistritos()
-  }, [])
+  }, [notifyApiError])
 
   // Cargar detalles de la predicción cuando cambia el distrito
   useEffect(() => {
@@ -49,7 +52,7 @@ export function PredictionsPage() {
         }
       } catch (err: any) {
         if (err.name !== 'CanceledError') {
-          console.error("Error fetching prediction details:", err)
+          notifyApiError(err, 'No se pudieron cargar las predicciones.')
         }
       } finally {
         if (active) setLoading(false)
@@ -62,11 +65,17 @@ export function PredictionsPage() {
       active = false
       controller.abort()
     }
-  }, [distrito])
+  }, [distrito, notifyApiError])
 
   const predictionVsHistory = data?.prediction_vs_history || []
   const riskByHour = data?.risk_by_hour || []
   const zoneComparison = data?.zone_comparison || []
+
+  const totalReal = predictionVsHistory.reduce((acc: number, row: { real?: number }) => acc + (row.real ?? 0), 0)
+  const totalPred = predictionVsHistory.reduce((acc: number, row: { pred?: number }) => acc + (row.pred ?? 0), 0)
+  const riskLevel =
+    totalPred > totalReal * 1.1 ? 'Alto' : totalPred < totalReal * 0.9 ? 'Moderado' : 'Estable'
+  const hasSummaryData = predictionVsHistory.length > 0
 
   return (
     <>
@@ -99,15 +108,26 @@ export function PredictionsPage() {
 
         <div className="dash-alert-card">
           <h3>Distrito Seleccionado: {distrito}</h3>
-          <p style={{ margin: 0, fontSize: '0.875rem' }}>
-            <strong>88%</strong> Confiabilidad del modelo · Probabilidad de incremento delictivo:{' '}
-            <strong>88%</strong> · Nivel de Riesgo: <strong>Alto</strong> · Tendencia:{' '}
-            <strong>Estable</strong>
+          {hasSummaryData ? (
+            <p style={{ margin: 0, fontSize: '0.875rem' }}>
+              Incidentes históricos (7d): <strong>{totalReal}</strong> · Proyección modelo:{' '}
+              <strong>{totalPred}</strong> · Nivel de riesgo estimado: <strong>{riskLevel}</strong>
+            </p>
+          ) : (
+            <p style={{ margin: 0, fontSize: '0.875rem' }}>
+              No hay suficientes datos para este distrito. Seleccione otro o use TODOS.
+            </p>
+          )}
+          <p className="predictions-summary--demo">
+            Indicadores calculados a partir del histórico y la proyección del endpoint /predict/detalles.
           </p>
         </div>
 
         <div className="dash-card" style={{ marginBottom: '1rem' }}>
           <h3>Predicción vs Histórico (Últimos 7 días)</h3>
+          {predictionVsHistory.length === 0 ? (
+            <EmptyState message="No hay datos de predicción vs histórico para el distrito seleccionado." />
+          ) : (
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={predictionVsHistory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -119,6 +139,7 @@ export function PredictionsPage() {
               <Line type="monotone" dataKey="pred" name="Predicción IA" stroke="#8b5cf6" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </div>
 
         <div className="dash-grid-2">
@@ -160,7 +181,9 @@ export function PredictionsPage() {
         <div className="dash-card" style={{ marginTop: '1rem' }}>
           <h3>Comparación de Zonas de Mayor Riesgo</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
-            {zoneComparison.map((z: any) => (
+            {zoneComparison.length === 0 ? (
+              <EmptyState message="No hay zonas de riesgo comparables para este distrito." />
+            ) : zoneComparison.map((z: any) => (
               <div key={z.zone} className="dash-zone-card">
                 <div className="dash-zone-card__head">
                   <span>{z.zone}</span>

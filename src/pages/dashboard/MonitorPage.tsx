@@ -9,6 +9,7 @@ import {
   YAxis,
 } from 'recharts'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 import { normalizeMonitorData } from '../../features/monitor/normalizeMonitorData'
 
@@ -28,7 +29,8 @@ const MODEL_VERSIONS = [
 ]
 
 export function MonitorPage() {
-  const [data, setData] = useState(() => normalizeMonitorData(null))
+  const { notifyApiError } = useNotification()
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [logsOpen, setLogsOpen] = useState(false)
 
@@ -43,9 +45,9 @@ export function MonitorPage() {
         if (active && res.data && res.data.success) {
           setData(normalizeMonitorData(res.data))
         }
-      } catch (err: unknown) {
-        if (!(err instanceof Error) || err.name !== 'CanceledError') {
-          console.error("Error fetching model monitor:", err)
+      } catch (err: any) {
+        if (err.name !== 'CanceledError') {
+          notifyApiError(err, 'No se pudo cargar el monitor del modelo.')
         }
       } finally {
         if (active) setLoading(false)
@@ -58,7 +60,7 @@ export function MonitorPage() {
       active = false
       controller.abort()
     }
-  }, [])
+  }, [notifyApiError])
 
   const { version, precision, registros, nodos, aristas, logs } = data
 

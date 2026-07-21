@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useUserModal } from '../../contexts/UserModalContext'
+import { useNotification } from '../../contexts/NotificationContext'
 import { apiClient } from '../../api/client'
 
 type UserData = {
@@ -13,12 +14,14 @@ type UserData = {
 
 export function UserManagementModal() {
   const { isOpen, close } = useUserModal()
+  const { notifyApiError, notifySuccess, notifyError } = useNotification()
   const [users, setUsers] = useState<UserData[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState<'all' | 'active' | 'inactive'>('all')
   const [search, setSearch] = useState('')
-  
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'analista'>('all')
+  const [saving, setSaving] = useState(false)
   // Form state
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
@@ -30,7 +33,7 @@ export function UserManagementModal() {
       const res = await apiClient.get('/usuarios')
       setUsers(res.data)
     } catch (error) {
-      console.error("Error cargando usuarios:", error)
+      notifyApiError(error, 'No se pudieron cargar los usuarios.')
     } finally {
       setLoading(false)
     }
@@ -44,19 +47,26 @@ export function UserManagementModal() {
   }, [isOpen])
 
   const handleCreate = async () => {
+    if (!nombre.trim() || !email.trim()) {
+      notifyError('Nombre y correo son obligatorios.')
+      return
+    }
+    setSaving(true)
     try {
       await apiClient.post('/usuarios', {
-        nombre,
-        email,
-        id_rol: rolId
+        nombre: nombre.trim(),
+        email: email.trim(),
+        id_rol: rolId,
       })
-      alert("Usuario creado correctamente. El correo de bienvenida ha sido encolado.")
+      notifySuccess('Usuario creado correctamente. El correo de bienvenida ha sido encolado.')
       setNombre('')
       setEmail('')
       setShowForm(false)
       fetchUsers()
-    } catch (err: any) {
-      alert("Error al crear usuario: " + (err.response?.data?.detail || err.message))
+    } catch (err: unknown) {
+      notifyApiError(err, 'Error al crear usuario.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -66,8 +76,7 @@ export function UserManagementModal() {
         await apiClient.delete(`/usuarios/${id}`)
         fetchUsers()
       } catch (err) {
-        console.error(err)
-        alert("Error al desactivar")
+        notifyApiError(err, 'Error al desactivar el usuario.')
       }
     }
   }
@@ -79,11 +88,15 @@ export function UserManagementModal() {
       tab === 'all' ||
       (tab === 'active' && u.estado_usuario_sistema === 'activo') ||
       (tab === 'inactive' && u.estado_usuario_sistema === 'inactivo')
+    const matchRole =
+      roleFilter === 'all' ||
+      (roleFilter === 'admin' && u.id_rol === 1) ||
+      (roleFilter === 'analista' && u.id_rol !== 1)
     const matchSearch =
       !search ||
       u.nombre_usuario_sistema.toLowerCase().includes(search.toLowerCase()) ||
       u.email_usuario_sistema.toLowerCase().includes(search.toLowerCase())
-    return matchTab && matchSearch
+    return matchTab && matchRole && matchSearch
   })
 
   return (
@@ -117,7 +130,11 @@ export function UserManagementModal() {
               className="dash-select"
               style={{ flex: 1, minWidth: 200 }}
             />
-            <select className="dash-select" defaultValue="all">
+            <select
+              className="dash-select"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as 'all' | 'admin' | 'analista')}
+            >
               <option value="all">Todos los roles</option>
               <option value="admin">Administrador</option>
               <option value="analista">Analista</option>
@@ -138,7 +155,9 @@ export function UserManagementModal() {
                   <option value={2}>Analista</option>
                 </select>
               </div>
-              <button type="button" className="dash-btn dash-btn--primary" onClick={handleCreate}>Guardar e Invitar</button>
+              <button type="button" className="dash-btn dash-btn--primary" onClick={handleCreate} disabled={saving}>
+                {saving ? 'Guardando...' : 'Guardar e Invitar'}
+              </button>
             </div>
           )}
 

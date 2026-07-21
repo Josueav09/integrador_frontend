@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '../../components/dashboard/PageHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { useNotification } from '../../contexts/NotificationContext'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { apiClient } from '../../api/client'
+import { normalizeHotspot } from '../../utils/hotspotCoords'
 
 const TIPOS_DELITO = [
   { id: 'TODOS', label: 'Todos los delitos' },
@@ -13,6 +16,7 @@ const TIPOS_DELITO = [
 // Eliminado REAL_DISTRICTS mock, ahora consumimos data viva
 
 export function CrimeMapPage() {
+  const { notifyApiError } = useNotification()
   const [mode, setMode] = useState<'historico' | 'prediccion'>('historico')
 
   // States para Filtros Reales
@@ -28,6 +32,8 @@ export function CrimeMapPage() {
   const [zoneStats, setZoneStats] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
+  const consultaFecha = new Date().toISOString().split('T')[0]
+
   const fetchZoneStats = async (dist: string) => {
     try {
       const res = await apiClient.get(`/dashboard/stats-distrito/${dist}`)
@@ -35,7 +41,7 @@ export function CrimeMapPage() {
         setZoneStats(res.data.data)
       }
     } catch (err) {
-      console.error("Error fetching stats-distrito:", err)
+      notifyApiError(err, 'No se pudieron cargar las estadísticas del distrito.')
     }
   }
 
@@ -43,9 +49,10 @@ export function CrimeMapPage() {
     setLoading(true)
     try {
       const res = await apiClient.get('/dashboard/mapa-geojson')
-      setHistorico(res.data.data)
+      setHistorico(res.data.data ?? [])
     } catch (err) {
-      console.error("Error al obtener histórico geojson:", err)
+      notifyApiError(err, 'No se pudo cargar el mapa histórico.')
+      setHistorico([])
     } finally {
       setLoading(false)
     }
@@ -58,25 +65,26 @@ export function CrimeMapPage() {
         setDistritosDb(res.data.data)
       }
     } catch (err) {
-      console.error("Error fetching distritos:", err)
+      notifyApiError(err, 'No se pudo cargar la lista de distritos.')
     }
   }
 
-  // FASE 3: Consumo del Motor GNN
   const fetchPredictions = async () => {
     setLoading(true)
     try {
-      // Llamada real al backend enviando la fecha, distrito y TIPO DE DELITO (Filtro Heurístico)
+      const distrito = distritoInput === 'TODOS' ? 'Lima' : distritoInput
       const res = await apiClient.post('/predict/predecir', {
-        fecha_consulta: '2026-05-20',
-        distrito: distritoInput || 'Lima',
-        tipo_delito: selectedType
+        fecha_consulta: consultaFecha,
+        distrito,
+        tipo_delito: selectedType,
       })
-      if (res.data && res.data.hotspots) {
-        setHotspots(res.data.hotspots)
+      if (res.data?.hotspots) {
+        const normalized = res.data.hotspots.map((h: any) => normalizeHotspot(h, distrito))
+        setHotspots(normalized)
       }
     } catch (err) {
-      console.error("Error al obtener predicciones GNN:", err)
+      notifyApiError(err, 'No se pudieron cargar las predicciones. Verifique su sesión o el backend.')
+      setHotspots([])
     } finally {
       setLoading(false)
     }
@@ -155,15 +163,16 @@ export function CrimeMapPage() {
             type="button"
             className="dash-btn dash-btn--primary"
             data-testid="map-apply-filters-btn"
+            disabled={loading}
             onClick={() => {
               if (mode === 'prediccion') {
-                fetchPredictions();
+                fetchPredictions()
               } else {
-                fetchHistorico();
+                fetchHistorico()
               }
             }}
           >
-            Aplicar Filtros
+            {loading ? 'Cargando...' : 'Aplicar Filtros'}
           </button>
         </div>
 
@@ -236,6 +245,19 @@ export function CrimeMapPage() {
                 })
               )}
             </MapContainer>
+            {!loading &&
+              ((mode === 'historico' && historico.length === 0) ||
+                (mode === 'prediccion' && hotspots.length === 0)) && (
+                <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem', zIndex: 1000 }}>
+                  <EmptyState
+                    message={
+                      mode === 'historico'
+                        ? 'No hay incidentes históricos para los filtros seleccionados.'
+                        : 'No hay predicciones GNN disponibles para los filtros seleccionados.'
+                    }
+                  />
+                </div>
+              )}
           </div>
 
           <div>
